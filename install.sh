@@ -63,5 +63,5 @@ docker compose up -d --build
 
 ok "Doorman is starting. Dashboard: ${PUBLIC_URL}"
 echo "Invite the bot to a server with the URL from the Discord Developer Portal's"
-echo "OAuth2 URL Generator (scopes: bot + applications.commands; permissions:"
+echo "OAuth2 URL Generator (scope: bot; permissions:"
 echo "View Channels, Send Messages, Attach Files, Manage Roles, Manage Guild)."

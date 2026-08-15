@@ -76,9 +76,9 @@ Discord application — then writes `.env` and starts everything with Docker Com
    join events) → **Reset Token** and copy it.
 3. **OAuth2** tab → copy the **Client Secret** → under **Redirects**, add
    `<your PUBLIC_URL>/api/auth/callback`.
-4. **OAuth2 → URL Generator** → scopes `bot` + `applications.commands`; bot
-   permissions: **View Channels, Send Messages, Attach Files, Manage Roles,
-   Manage Guild**. Use the generated URL to invite the bot to your server.
+4. **OAuth2 → URL Generator** → scope `bot`; bot permissions: **View Channels,
+   Send Messages, Attach Files, Manage Roles, Manage Guild**. Use the generated
+   URL to invite the bot to your server.
 5. Run `./install.sh` and paste the Application ID, Client Secret, and Bot Token
    when asked.
 6. Open the dashboard at your `PUBLIC_URL`, log in with Discord, pick your server,
