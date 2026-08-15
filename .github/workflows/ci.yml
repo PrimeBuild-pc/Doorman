@@ -17,10 +17,13 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install
+      # shared/database compile to dist/ and apps/* resolve them from there (see
+      # their package.json "main"), so build has to run before typecheck can see
+      # those packages' types — a clean checkout has no dist/ yet.
+      - run: pnpm build
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test
-      - run: pnpm build
       - run: docker build .
 
   publish:
