@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Guild {
+  id                 String    @id
+  name               String
+  defaultRoleIds     String[]  @default([])
+  welcomeChannelId   String?
+  bannerPath         String?
+  /// 0 disables the anti-raid gate. Above 0, an account younger than this many
+  /// hours is queued in PendingApproval instead of being auto-roled.
+  minAccountAgeHours Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  inviteRoleMaps   InviteRoleMap[]
+  pendingApprovals PendingApproval[]
+  joinEvents       JoinEvent[]
+}
+
+model InviteRoleMap {
+  id        String @id @default(cuid())
+  guildId   String
+  guild     Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  inviteCode String
+  roleId    String
+
+  @@unique([guildId, inviteCode])
+  @@index([guildId])
+}
+
+model PendingApproval {
+  id                String    @id @default(cuid())
+  guildId           String
+  guild             Guild     @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  userId            String
+  username          String
+  accountCreatedAt  DateTime
+  joinedAt          DateTime
+  /// pending | approved | denied
+  status            String    @default("pending")
+  decidedByUserId   String?
+  decidedAt         DateTime?
+
+  @@index([guildId, status])
+}
+
+model JoinEvent {
+  id             String   @id @default(cuid())
+  guildId        String
+  guild          Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  userId         String
+  inviteCodeUsed String?
+  rolesAssigned  String[] @default([])
+  welcomeSent    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([guildId, createdAt])
+}

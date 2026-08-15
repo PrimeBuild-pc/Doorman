@@ -1,0 +1,23 @@
+{
+  "name": "@doorman/bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@doorman/database": "workspace:*",
+    "@doorman/shared": "workspace:*",
+    "@napi-rs/canvas": "^0.1.56",
+    "discord.js": "^14.16.3"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}

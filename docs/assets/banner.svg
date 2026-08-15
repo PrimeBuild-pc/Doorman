@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300" role="img" aria-label="Doorman banner">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="1" stop-color="#1f2937"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="300" fill="url(#bg)"/>
+
+  <g transform="translate(70,50)">
+    <path d="M 20 200
+             L 20 90
+             A 70 70 0 0 1 160 90
+             L 160 200"
+          fill="none" stroke="#f59e0b" stroke-width="34" stroke-linecap="round"/>
+    <circle cx="90" cy="150" r="20" fill="#fcd34d"/>
+  </g>
+
+  <text x="282" y="150" font-family="system-ui, -apple-system, Segoe UI, sans-serif"
+        font-size="96" font-weight="800" fill="#e5e7eb" letter-spacing="2">DOORMAN</text>
+  <rect x="284" y="172" width="420" height="4" fill="#f59e0b"/>
+  <text x="282" y="220" font-family="system-ui, -apple-system, Segoe UI, sans-serif"
+        font-size="30" fill="#9ca3af">Self-hosted welcome &amp; autorole bot for Discord</text>
+</svg>
