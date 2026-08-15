@@ -1,14 +1,24 @@
-import { Client, Events, GatewayIntentBits, type Guild } from 'discord.js';
+import { Client, Events, GatewayIntentBits, REST, Routes, type Guild } from 'discord.js';
 import { prisma } from '@doorman/database';
 import { getEnv } from '@doorman/shared';
 import { warmInviteCache } from './lib/inviteCache.js';
 import * as guildMemberAdd from './events/guildMemberAdd.js';
+import { commands } from './commands/index.js';
 
 const env = getEnv();
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildInvites],
 });
+
+async function registerCommands(): Promise<void> {
+  const rest = new REST().setToken(env.DISCORD_BOT_TOKEN);
+  // Global registration (not per-guild): simpler for a self-hosted single-instance
+  // bot, and the ~1h propagation delay only matters the very first time it runs.
+  await rest.put(Routes.applicationCommands(env.DISCORD_CLIENT_ID), {
+    body: commands.map((c) => c.data.toJSON()),
+  });
+}
 
 async function ensureGuildRow(guild: Guild): Promise<void> {
   await prisma.guild.upsert({
@@ -24,10 +34,25 @@ client.once(Events.ClientReady, async (ready) => {
   for (const guild of ready.guilds.cache.values()) {
     await ensureGuildRow(guild);
   }
+  await registerCommands();
 });
 
 client.on(Events.GuildCreate, ensureGuildRow);
 client.on(guildMemberAdd.name, guildMemberAdd.execute);
+
+client.on(Events.InteractionCreate, async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+  const command = commands.find((c) => c.data.name === interaction.commandName);
+  if (!command) return;
+  try {
+    await command.execute(interaction);
+  } catch (err) {
+    console.error(`Command ${interaction.commandName} failed`, err);
+    if (!interaction.replied) {
+      await interaction.reply({ content: 'Something went wrong.', ephemeral: true }).catch(() => {});
+    }
+  }
+});
 
 client.on(Events.InviteCreate, (invite) => {
   if (invite.guild) void warmInviteCache(invite.guild as Guild);
