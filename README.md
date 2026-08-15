@@ -88,7 +88,8 @@ Discord application — then writes `.env` and starts everything with Docker Com
 
 ```bash
 pnpm install
-pnpm --filter @doorman/database exec prisma generate
+pnpm build       # compiles packages/shared and packages/database first — apps/bot
+                 # and apps/web resolve both from their built dist/ output
 pnpm --filter @doorman/database exec prisma db push   # needs DATABASE_URL set
 pnpm dev:bot     # apps/bot with hot reload
 pnpm dev:web     # apps/web (Next.js dev server)
