@@ -7,17 +7,19 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/github/actions/workflow/status/PrimeBuild-pc/Doorman/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI" alt="CI">
-  <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
-  <img src="https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=nextdotjs" alt="Next.js">
-  <img src="https://img.shields.io/badge/discord.js-v14-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="discord.js">
+  <a href="https://github.com/PrimeBuild-pc/Doorman/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/PrimeBuild-pc/Doorman?style=plastic&amp;logo=git&amp;logoColor=white"></a>
+  <a href="https://github.com/PrimeBuild-pc/Doorman/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/PrimeBuild-pc/Doorman?style=plastic&amp;logo=github"></a>
+  <a href="https://github.com/PrimeBuild-pc/Doorman/issues"><img alt="Open issues" src="https://img.shields.io/github/issues/PrimeBuild-pc/Doorman?style=plastic&amp;logo=github"></a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/self--hosted-no%20cloud%2C%20no%20tracking-2dd4a7?style=for-the-badge" alt="Self-hosted">
-  <img src="https://img.shields.io/badge/privacy-first-2dd4a7?style=for-the-badge" alt="Privacy-first">
-  <img src="https://img.shields.io/badge/cost-zero-2dd4a7?style=for-the-badge" alt="Zero cost">
+  <a href="https://github.com/PrimeBuild-pc/Doorman/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/PrimeBuild-pc/Doorman/ci.yml?branch=main&amp;style=plastic&amp;logo=githubactions&amp;label=CI"></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-2ea44f?style=plastic"></a>
+  <img src="https://img.shields.io/badge/self--hosted-no%20cloud%2C%20no%20tracking-2dd4a7?style=plastic" alt="Self-hosted">
+  <img src="https://img.shields.io/badge/privacy-first-2dd4a7?style=plastic" alt="Privacy-first">
+  <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?style=plastic&amp;logo=typescript&amp;logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Next.js-16-111111?style=plastic&amp;logo=nextdotjs&amp;logoColor=white" alt="Next.js">
+  <img src="https://img.shields.io/badge/discord.js-v14-5865F2?style=plastic&amp;logo=discord&amp;logoColor=white" alt="discord.js">
 </p>
 
 <p align="center"><i>A self-hosted Discord bot that greets new members: assigns a role on
