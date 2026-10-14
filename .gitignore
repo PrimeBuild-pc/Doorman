@@ -7,3 +7,13 @@ dist/
 .turbo/
 data/
 uploads/
+next-env.d.ts
+coverage/
+.verification/
+backups/
+*.dump
+*.log
+__pycache__/
+*.py[cod]
+.claude/settings.local.json
+.DS_Store

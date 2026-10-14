@@ -10,3 +10,12 @@ dist
 !.env.example
 data
 uploads
+**/next-env.d.ts
+**/*.tsbuildinfo
+**/coverage
+**/__pycache__
+.verification
+backups
+**/*.dump
+**/*.log
+.claude/settings.local.json
