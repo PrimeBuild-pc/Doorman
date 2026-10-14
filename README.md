@@ -1,6 +1,35 @@
-# Doorman
+<p align="center">
+  <img src="docs/assets/in-development.svg" alt="In sviluppo" width="420">
+</p>
 
-<p align="center"><img src="docs/assets/banner.svg" alt="Doorman" width="100%"></p>
+<p align="center">
+  <img src="docs/assets/banner.svg" alt="Doorman — benvenuto e ruoli per community Discord" width="100%">
+</p>
+
+<p align="center">
+  <a href="https://github.com/PrimeBuild-pc/Doorman/commits/main"><img alt="Ultimo commit" src="https://img.shields.io/github/last-commit/PrimeBuild-pc/Doorman?style=plastic&amp;logo=git&amp;logoColor=white"></a>
+  <a href="https://github.com/PrimeBuild-pc/Doorman/stargazers"><img alt="Stelle GitHub" src="https://img.shields.io/github/stars/PrimeBuild-pc/Doorman?style=plastic&amp;logo=github"></a>
+  <a href="https://github.com/PrimeBuild-pc/Doorman/issues"><img alt="Issue aperte" src="https://img.shields.io/github/issues/PrimeBuild-pc/Doorman?style=plastic&amp;logo=github"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/PrimeBuild-pc/Doorman/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/PrimeBuild-pc/Doorman/ci.yml?branch=main&amp;style=plastic&amp;logo=githubactions&amp;label=CI"></a>
+  <a href="LICENSE"><img alt="Licenza MIT" src="https://img.shields.io/badge/license-MIT-2ea44f?style=plastic"></a>
+  <img alt="Self-hosted" src="https://img.shields.io/badge/self--hosted-your%20infrastructure-2dd4a7?style=plastic">
+  <img alt="Privacy-first" src="https://img.shields.io/badge/privacy-first-2dd4a7?style=plastic">
+</p>
+
+<p align="center">
+  <img alt="TypeScript strict" src="https://img.shields.io/badge/TypeScript-strict-3178C6?style=plastic&amp;logo=typescript&amp;logoColor=white">
+  <img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-111111?style=plastic&amp;logo=nextdotjs&amp;logoColor=white">
+  <img alt="discord.js v14" src="https://img.shields.io/badge/discord.js-v14-5865F2?style=plastic&amp;logo=discord&amp;logoColor=white">
+</p>
+
+<p align="center"><i>Accogli i nuovi membri con ruoli, card personalizzate e approvazioni gestite dal tuo server.</i></p>
+
+---
+
+# Doorman
 
 Bot Discord self-hosted per community: autorole, card di benvenuto con banner, ruoli per invito e coda di approvazione per account troppo giovani. Dashboard con login Discord; comandi `/doorman-status` e `/doorman-pending` per chi può gestire il server.
 
