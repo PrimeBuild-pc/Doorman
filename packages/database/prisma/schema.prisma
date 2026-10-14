@@ -43,7 +43,7 @@ model PendingApproval {
   username          String
   accountCreatedAt  DateTime
   joinedAt          DateTime
-  /// pending | approved | denied
+  /// pending | approved | denied | superseded (previous join/duplicate request)
   status            String    @default("pending")
   decidedByUserId   String?
   decidedAt         DateTime?

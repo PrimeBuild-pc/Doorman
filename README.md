@@ -1,121 +1,40 @@
-<p align="center">
-  <img src="docs/assets/in-development.svg" alt="in development..." width="420">
-</p>
+# Doorman
 
-<p align="center">
-  <img src="docs/assets/banner.svg" alt="Doorman" width="100%">
-</p>
+<p align="center"><img src="docs/assets/banner.svg" alt="Doorman" width="100%"></p>
 
-<p align="center">
-  <a href="https://github.com/PrimeBuild-pc/Doorman/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/PrimeBuild-pc/Doorman?style=plastic&amp;logo=git&amp;logoColor=white"></a>
-  <a href="https://github.com/PrimeBuild-pc/Doorman/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/PrimeBuild-pc/Doorman?style=plastic&amp;logo=github"></a>
-  <a href="https://github.com/PrimeBuild-pc/Doorman/issues"><img alt="Open issues" src="https://img.shields.io/github/issues/PrimeBuild-pc/Doorman?style=plastic&amp;logo=github"></a>
-</p>
+Bot Discord self-hosted per community: autorole, card di benvenuto con banner, ruoli per invito e coda di approvazione per account troppo giovani. Dashboard con login Discord; comandi `/doorman-status` e `/doorman-pending` per chi può gestire il server.
 
-<p align="center">
-  <a href="https://github.com/PrimeBuild-pc/Doorman/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/PrimeBuild-pc/Doorman/ci.yml?branch=main&amp;style=plastic&amp;logo=githubactions&amp;label=CI"></a>
-  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-2ea44f?style=plastic"></a>
-  <img src="https://img.shields.io/badge/self--hosted-no%20cloud%2C%20no%20tracking-2dd4a7?style=plastic" alt="Self-hosted">
-  <img src="https://img.shields.io/badge/privacy-first-2dd4a7?style=plastic" alt="Privacy-first">
-  <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?style=plastic&amp;logo=typescript&amp;logoColor=white" alt="TypeScript">
-  <img src="https://img.shields.io/badge/Next.js-16-111111?style=plastic&amp;logo=nextdotjs&amp;logoColor=white" alt="Next.js">
-  <img src="https://img.shields.io/badge/discord.js-v14-5865F2?style=plastic&amp;logo=discord&amp;logoColor=white" alt="discord.js">
-</p>
+**In sviluppo:** il filtro per età non è una protezione anti-raid completa; l'attribuzione degli inviti è best-effort. Non assegnare automaticamente ruoli amministrativi.
 
-<p align="center"><i>A self-hosted Discord bot that greets new members: assigns a role on
-join, posts a custom welcome card, and can route a different role depending on the
-invite link someone used. Built after ProBot — the hosted bot most servers relied on
-for this — went down.</i></p>
+## Avvio
 
----
-
-## What it does
-
-- **Autorole on join** — assign one or more roles automatically when someone joins.
-- **Welcome card** — the new member's avatar and username are composited onto a
-  banner image you upload per server, then posted to a welcome channel.
-- **Role by invite link** — map specific invite codes to specific roles (e.g. a
-  partner's invite grants a "Partner" role automatically).
-- **Anti-raid guard** — accounts younger than a configurable age are held in a
-  pending-approval queue instead of being auto-roled, so a burst of freshly created
-  accounts doesn't walk straight into your server's roles.
-- **Web dashboard** — switch between every server you manage, configure all of the
-  above, and approve/deny pending joins, all from a browser.
-- **Slash commands** — `/doorman-status` and `/doorman-pending`, both read-only and
-  restricted to members with Manage Server, for a quick check without opening the
-  dashboard.
-
-You run your own copy, with your own bot token. There's no hosted service, no
-account to create with a third party, and your server's data (members, invites,
-uploaded banners) never leaves your own database.
-
-## Architecture
-
-<div align="center">
-
-```text
-Discord Gateway ─┐
-                  ├─> apps/bot (discord.js) ─┐
-Discord REST ─────┘                          ├─> PostgreSQL (packages/database)
-                                              │
-Browser (OAuth login) ─> apps/web (Next.js) ─┘
-```
-
-</div>
-
-A single pnpm monorepo, one Docker image run as two processes (`bot`, `web`) plus
-Postgres — see [`compose.yaml`](compose.yaml).
-
-## Quick start
+Servono Docker Engine/Desktop con container Linux, Compose v2 recente, Bash e OpenSSL.
 
 ```bash
-git clone https://github.com/PrimeBuild-pc/Doorman.git
+git clone --config core.autocrlf=false https://github.com/PrimeBuild-pc/Doorman.git
 cd Doorman
-./install.sh
+bash install.sh
 ```
 
-The installer walks you through the one thing it can't do for you — creating the
-Discord application — then writes `.env` and starts everything with Docker Compose.
+Prima prepara l'app Discord con la [guida self-hosting](docs/self-hosting.md): intent, OAuth, permessi minimi e gerarchia dei ruoli. L'installer nasconde token e Client Secret, genera password casuali, **non sovrascrive `.env`** e chiede conferma prima di scaricare/avviare servizi. La dashboard resta su `127.0.0.1:3000`; accesso remoto solo con HTTPS o tunnel SSH.
 
-### Discord app setup (manual, ~5 minutes)
+Dopo l'avvio apri `http://localhost:3000`, accedi con Discord, scegli il server e salva ruoli/canale. Per un homelab remoto usa il tunnel SSH della guida prima di aprire il browser.
 
-1. [Discord Developer Portal](https://discord.com/developers/applications) → **New
-   Application**.
-2. **Bot** tab → enable the **Server Members Intent** toggle (required to receive
-   join events) → **Reset Token** and copy it.
-3. **OAuth2** tab → copy the **Client Secret** → under **Redirects**, add
-   `<your PUBLIC_URL>/api/auth/callback`.
-4. **OAuth2 → URL Generator** → scopes `bot` + `applications.commands`; bot
-   permissions: **View Channels, Send Messages, Attach Files, Manage Roles,
-   Manage Guild**. Use the generated URL to invite the bot to your server.
-5. Run `./install.sh` and paste the Application ID, Client Secret, and Bot Token
-   when asked.
-6. Open the dashboard at your `PUBLIC_URL`, log in with Discord, pick your server,
-   set a default role, upload a banner, and you're done.
+## Più server, stessa installazione
 
-## Development
+Invita la stessa app in ogni server desiderato; ruoli, banner, inviti e approvazioni sono separati per ID server. Ogni accesso alle impostazioni o modifica verifica i permessi correnti su Discord e la presenza del bot. Solo ruoli non privilegiati, anche negli override dei canali, e sotto Doorman sono assegnabili. Un errore Discord non viene registrato come approvazione riuscita.
 
-```bash
-pnpm install
-pnpm build       # compiles packages/shared and packages/database first — apps/bot
-                 # and apps/web resolve both from their built dist/ output
-pnpm --filter @doorman/database exec prisma db push   # needs DATABASE_URL set
-pnpm dev:bot     # apps/bot with hot reload
-pnpm dev:web     # apps/web (Next.js dev server)
-pnpm typecheck && pnpm lint && pnpm test
-```
+Le richieste di ingressi precedenti vengono superate; gli ingressi simultanei con inviti ambigui non ricevono il ruolo per invito. Questa è un'installazione per community fidate, **non un servizio pubblico multi-tenant** né una prova d'identità dei membri.
 
-## Notes and limits
+## Architettura e costi
 
-- Uploaded banners are stored on a local Docker volume, not a third-party bucket —
-  back up the `uploads` volume yourself if that matters to you.
-- The anti-raid guard is a simple account-age gate, not a full anti-raid suite —
-  it catches the common "mass-created alt accounts" pattern, not a coordinated
-  raid using older accounts.
-- One bot, one server family: like [D-View](https://github.com/PrimeBuild-pc/D-View),
-  this is meant to be self-hosted per Discord community, not run as a public
-  multi-tenant service.
+`apps/bot` (discord.js) e `apps/web` (Next.js) condividono PostgreSQL (`packages/database`) e il volume dei banner. Compose esegue prima un unico job di schema, poi bot e web, come utenti non-root. Il codice è TypeScript in un monorepo pnpm.
 
-## License
+Nessun modello AI, chiave LLM o abbonamento AI serve al bot. Gli eventuali abbonamenti di un coding agent sono strumenti di sviluppo separati: non finanziano né ospitano Doorman. Restano i costi del tuo host, storage/backup, rete ed eventuale dominio. Discord riceve richieste API, messaggi e immagini di benvenuto; database e banner originali risiedono sul tuo host.
 
-MIT — see [LICENSE](LICENSE).
+- [Installazione, configurazione, backup, aggiornamento e troubleshooting](docs/self-hosting.md)
+- [Sviluppo e verifiche locali](docs/development.md)
+- [Verifiche infrastruttura senza deploy](docs/infra-checks.md)
+- [Assistenza sicura da un agent](docs/agent-operations.md)
+
+Licenza [MIT](LICENSE).
