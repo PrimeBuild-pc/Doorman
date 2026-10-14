@@ -1,15 +1,21 @@
-import { PermissionFlagsBits, SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
+import {
+  PermissionFlagsBits,
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+} from 'discord.js';
 import { prisma } from '@doorman/database';
+import { requireGuildManager } from './authorization.js';
 
 const MAX_LISTED = 10;
 
 export const data = new SlashCommandBuilder()
   .setName('doorman-pending')
   .setDescription('List members held by the anti-raid guard, waiting for approval.')
-  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+  .setDMPermission(false);
 
 export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
-  if (!interaction.guildId) return;
+  if (!(await requireGuildManager(interaction)) || !interaction.guildId) return;
 
   const pending = await prisma.pendingApproval.findMany({
     where: { guildId: interaction.guildId, status: 'pending' },
@@ -23,7 +29,8 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   }
 
   const lines = pending.map(
-    (p) => `• **${p.username}** — account created <t:${Math.floor(p.accountCreatedAt.getTime() / 1000)}:R>`,
+    (p) =>
+      `• **${p.username}** — account created <t:${Math.floor(p.accountCreatedAt.getTime() / 1000)}:R>`,
   );
 
   await interaction.reply({

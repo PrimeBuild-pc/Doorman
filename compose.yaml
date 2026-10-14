@@ -1,58 +1,90 @@
+x-app: &app
+  build: .
+  image: doorman:local
+  pull_policy: never
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=64m
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  restart: unless-stopped
+
+x-env: &env
+  DATABASE_URL: postgresql://doorman:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/doorman
+  DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:?Set DISCORD_BOT_TOKEN in .env}
+  DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:?Set DISCORD_CLIENT_ID in .env}
+  DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:?Set DISCORD_CLIENT_SECRET in .env}
+  AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET in .env}
+  PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+  UPLOADS_DIR: /data/uploads
+
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16.10-alpine3.22
+    user: postgres
     environment:
       POSTGRES_USER: doorman
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-doorman}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: doorman
     volumes:
       - db-data:/var/lib/postgresql/data
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /var/run/postgresql:rw,noexec,nosuid,size=16m,uid=70,gid=70
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U doorman"]
+      test: ["CMD-SHELL", "pg_isready -U doorman -d doorman -h 127.0.0.1"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
+      start_period: 10s
     restart: unless-stopped
 
-  bot:
-    build: .
-    image: ghcr.io/primebuild-pc/doorman:latest
+  schema:
+    <<: *app
     environment:
-      SERVICE: bot
-      DATABASE_URL: postgresql://doorman:${POSTGRES_PASSWORD:-doorman}@db:5432/doorman
-      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
-      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
-      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
-      AUTH_SECRET: ${AUTH_SECRET}
-      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
-      UPLOADS_DIR: /data/uploads
-    volumes:
-      - uploads:/data/uploads
+      SERVICE: schema
+      DATABASE_URL: postgresql://doorman:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/doorman
     depends_on:
       db:
         condition: service_healthy
-    restart: unless-stopped
+    restart: "no"
+
+  bot:
+    <<: *app
+    environment:
+      <<: *env
+      SERVICE: bot
+    volumes:
+      - uploads:/data/uploads:ro
+    depends_on:
+      schema:
+        condition: service_completed_successfully
 
   web:
-    build: .
-    image: ghcr.io/primebuild-pc/doorman:latest
+    <<: *app
     environment:
+      <<: *env
       SERVICE: web
-      DATABASE_URL: postgresql://doorman:${POSTGRES_PASSWORD:-doorman}@db:5432/doorman
-      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
-      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
-      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
-      AUTH_SECRET: ${AUTH_SECRET}
-      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
-      UPLOADS_DIR: /data/uploads
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /app/apps/web/.next/cache:rw,noexec,nosuid,size=64m,uid=1000,gid=1000
     volumes:
       - uploads:/data/uploads
     ports:
-      - "${DOORMAN_PORT:-3000}:3000"
+      - "${DOORMAN_BIND_ADDRESS:-127.0.0.1}:${DOORMAN_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/auth/login',{redirect:'manual',signal:AbortSignal.timeout(4000)}).then(r=>process.exit(r.status===307?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
+      schema:
+        condition: service_completed_successfully
 
 volumes:
   db-data:

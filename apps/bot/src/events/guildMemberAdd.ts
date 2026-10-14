@@ -1,33 +1,43 @@
 import path from 'node:path';
-import { Events, type GuildMember } from 'discord.js';
+import { Events, PermissionFlagsBits, type GuildMember } from 'discord.js';
 import { prisma } from '@doorman/database';
-import { accountAgeHours, getEnv } from '@doorman/shared';
+import { accountAgeHours, getEnv, isSafeAutoRole } from '@doorman/shared';
 import { resolveUsedInviteCode } from '../lib/inviteCache.js';
 import { renderWelcomeCard } from '../lib/welcomeCard.js';
 
 export const name = Events.GuildMemberAdd;
 
 export async function execute(member: GuildMember): Promise<void> {
+  // Consume the snapshot even when this member is held or the guild is unconfigured.
+  const inviteCode = await resolveUsedInviteCode(member.guild);
   const guildConfig = await prisma.guild.findUnique({ where: { id: member.guild.id } });
   if (!guildConfig) return; // never configured from the dashboard — do nothing
 
   const ageHours = accountAgeHours(member.id);
   if (guildConfig.minAccountAgeHours > 0 && ageHours < guildConfig.minAccountAgeHours) {
-    await prisma.pendingApproval.create({
-      data: {
-        guildId: member.guild.id,
-        userId: member.id,
-        username: member.user.username,
-        accountCreatedAt: new Date(member.user.createdTimestamp),
-        joinedAt: new Date(),
-      },
+    const joinedAt = member.joinedAt;
+    if (!joinedAt) throw new Error('Discord member join timestamp is missing');
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${member.guild.id + ':' + member.id}, 0))`;
+      await tx.pendingApproval.updateMany({
+        where: { guildId: member.guild.id, userId: member.id, status: 'pending' },
+        data: { status: 'superseded' },
+      });
+      await tx.pendingApproval.create({
+        data: {
+          guildId: member.guild.id,
+          userId: member.id,
+          username: member.user.username,
+          accountCreatedAt: new Date(member.user.createdTimestamp),
+          joinedAt,
+        },
+      });
     });
     return; // no auto-role, no welcome card until an admin approves from the dashboard
   }
 
   const rolesToAssign = new Set(guildConfig.defaultRoleIds);
 
-  const inviteCode = await resolveUsedInviteCode(member.guild);
   if (inviteCode) {
     const mapping = await prisma.inviteRoleMap.findUnique({
       where: { guildId_inviteCode: { guildId: member.guild.id, inviteCode } },
@@ -35,12 +45,49 @@ export async function execute(member: GuildMember): Promise<void> {
     if (mapping) rolesToAssign.add(mapping.roleId);
   }
 
-  for (const roleId of rolesToAssign) {
+  const rolesAssigned: string[] = [];
+  if (rolesToAssign.size > 0) {
     try {
-      await member.roles.add(roleId);
-    } catch {
-      // Role deleted, or Doorman's own role sits below it in the hierarchy —
-      // skip that one role rather than aborting the rest of the join handling.
+      const [roles, bot, channels] = await Promise.all([
+        member.guild.roles.fetch(),
+        member.guild.members.fetchMe({ force: true }),
+        member.guild.channels.fetch(),
+      ]);
+      const overwrites = [...channels.values()].flatMap((channel) =>
+        channel
+          ? [...channel.permissionOverwrites.cache.values()].map((overwrite) => ({
+              id: overwrite.id,
+              allow: overwrite.allow.bitfield,
+            }))
+          : [],
+      );
+      for (const roleId of rolesToAssign) {
+        const role = roles.get(roleId);
+        if (
+          !role ||
+          !isSafeAutoRole(
+            { id: role.id, managed: role.managed, permissions: role.permissions.bitfield },
+            member.guild.id,
+            overwrites,
+          ) ||
+          !bot.permissions.has(PermissionFlagsBits.ManageRoles) ||
+          bot.roles.highest.comparePositionTo(role) <= 0
+        ) {
+          console.warn(`Skipped unsafe or unassignable role ${roleId} in guild ${member.guild.id}`);
+          continue;
+        }
+        try {
+          await member.roles.add(roleId);
+          rolesAssigned.push(roleId);
+        } catch (err) {
+          console.warn(
+            `Could not assign role ${roleId} to member ${member.id} in guild ${member.guild.id}`,
+            err,
+          );
+        }
+      }
+    } catch (err) {
+      console.warn(`Could not validate automatic roles in guild ${member.guild.id}`, err);
     }
   }
 
@@ -48,8 +95,17 @@ export async function execute(member: GuildMember): Promise<void> {
   if (guildConfig.welcomeChannelId && guildConfig.bannerPath) {
     try {
       const channel = await member.guild.channels.fetch(guildConfig.welcomeChannelId);
-      if (channel?.isTextBased()) {
-        const bannerFile = path.join(getEnv().UPLOADS_DIR, guildConfig.bannerPath);
+      if (channel?.isTextBased() && channel.guildId === member.guild.id) {
+        const bannerPath = guildConfig.bannerPath;
+        if (
+          bannerPath === '.' ||
+          bannerPath === '..' ||
+          path.posix.basename(bannerPath) !== bannerPath ||
+          path.win32.basename(bannerPath) !== bannerPath
+        ) {
+          throw new Error('Banner path must be a filename within UPLOADS_DIR');
+        }
+        const bannerFile = path.join(getEnv().UPLOADS_DIR, bannerPath);
         const card = await renderWelcomeCard(
           bannerFile,
           member.user.displayAvatarURL({ extension: 'png', size: 256 }),
@@ -61,8 +117,11 @@ export async function execute(member: GuildMember): Promise<void> {
         });
         welcomeSent = true;
       }
-    } catch {
-      // Channel deleted or missing send permission — don't fail the join over it.
+    } catch (err) {
+      console.warn(
+        `Could not send welcome for member ${member.id} in guild ${member.guild.id}`,
+        err,
+      );
     }
   }
 
@@ -71,7 +130,7 @@ export async function execute(member: GuildMember): Promise<void> {
       guildId: member.guild.id,
       userId: member.id,
       inviteCodeUsed: inviteCode,
-      rolesAssigned: Array.from(rolesToAssign),
+      rolesAssigned,
       welcomeSent,
     },
   });

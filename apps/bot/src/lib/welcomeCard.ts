@@ -23,7 +23,9 @@ export async function renderWelcomeCard(
   ctx.fillStyle = gradient;
   ctx.fillRect(0, HEIGHT - 170, WIDTH, 170);
 
-  const avatarBytes = Buffer.from(await (await fetch(avatarUrl)).arrayBuffer());
+  const response = await fetch(avatarUrl, { signal: AbortSignal.timeout(10_000) });
+  if (!response.ok) throw new Error(`Avatar fetch failed: HTTP ${response.status}`);
+  const avatarBytes = Buffer.from(await response.arrayBuffer());
   const avatar = await loadImage(avatarBytes);
 
   const ax = 40;
@@ -46,7 +48,8 @@ export async function renderWelcomeCard(
 
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 48px sans-serif';
-  ctx.fillText(username, ax + AVATAR_SIZE + 30, ay + r - 10);
+  const textX = ax + AVATAR_SIZE + 30;
+  ctx.fillText(username, textX, ay + r - 10, WIDTH - textX - 40);
 
   ctx.fillStyle = '#d1d5db';
   ctx.font = '28px sans-serif';

@@ -5,10 +5,56 @@
   --panel: #111827;
   --accent: #f59e0b;
   --border: #1f2937;
+  color-scheme: dark;
 }
 
 body {
   background: var(--bg);
   color: #e5e7eb;
   font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+:focus-visible {
+  outline: 3px solid #fbbf24;
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 10;
+  padding: 0.75rem 1rem;
+  background: var(--accent);
+  color: var(--bg);
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+button:not(:disabled),
+select:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+input,
+select {
+  min-width: 0;
+}
+
+input[type='file'] {
+  width: 100%;
+}
+
+h1,
+h2 {
+  text-wrap: balance;
 }

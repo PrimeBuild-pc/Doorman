@@ -5,6 +5,8 @@ node_modules
 **/.next
 dist
 **/dist
-.env
+.env*
+**/.env*
+!.env.example
 data
 uploads
