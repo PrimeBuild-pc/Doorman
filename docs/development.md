@@ -1,10 +1,10 @@
-# Sviluppo
+# Development
 
-Monorepo TypeScript: Next.js in `apps/web`, discord.js in `apps/bot`, Prisma/PostgreSQL in `packages/database`, utility/validazione in `packages/shared`. Consulta i `package.json` per gli script correnti; `pnpm-workspace.yaml` controlla anche i build script delle dipendenze.
+TypeScript monorepo: Next.js in `apps/web`, discord.js in `apps/bot`, Prisma/PostgreSQL in `packages/database`, utilities/validation in `packages/shared`. Consult the `package.json` files for current scripts; `pnpm-workspace.yaml` also controls dependency build scripts.
 
-## Dipendenze e build
+## Dependencies and builds
 
-Usa Node 22.20+ e la versione pnpm dichiarata in `package.json`. Con consenso alla rete:
+Use Node 22.20+ and the pnpm version declared in `package.json`. With network consent:
 
 ```bash
 corepack enable
@@ -16,50 +16,58 @@ pnpm lint
 pnpm test
 ```
 
-La build ricorsiva compila shared/database prima delle app, che li importano dai rispettivi `dist`. Prisma Client viene generato durante la build: non eseguire `migrate deploy` aspettandoti uno schema iniziale, perché non sono presenti migration versionate. `pnpm build` non deve ricevere credenziali Discord reali né collegarsi a Discord/DB. Evita `pnpm format` sull'intero repository per modifiche circoscritte.
+The recursive build compiles shared/database before the apps, which import them from their respective `dist` directories. Prisma Client is generated during the build: do not run `migrate deploy` expecting an initial schema, because there are no versioned migrations. `pnpm build` must not receive real Discord credentials or connect to Discord/DB. Avoid `pnpm format` across the entire repository for targeted changes.
 
-Con dipendenze già installate, puoi eseguire i controlli senza `install`. Riferisci eventuali processi/binarî non disponibili; non scaricarli automaticamente durante una verifica autorizzata solo come locale. Il web include test per sessioni/OAuth, autorizzazione e mutazioni isolate per guild, upload e markup/accessibilità. Bot/shared hanno test degli eventi, inviti e permessi. Il workspace database non ha una suite propria: una stringa “no tests” non è un test applicativo. La suite ordinaria usa mock delle transazioni; la verifica staging sotto esegue anche lock e concorrenza su PostgreSQL reale.
+With dependencies already installed, you can run checks without `install`. Report unavailable processes/binaries; do not download them automatically during checks authorized only for local execution. The web includes tests for sessions/OAuth, authorization and guild-isolated mutations, uploads and markup/accessibility. Bot/shared have tests for events, invites and permissions. The database workspace has no suite of its own: a “no tests” string is not an application test. The regular suite uses transaction mocks; the staging verification below also exercises locks and concurrency on real PostgreSQL.
 
-## Runtime di sviluppo (solo su ambiente autorizzato)
+## Interface languages
 
-`next dev`/bot **non caricano automaticamente la `.env` della root allo stesso modo di Compose**. Configura le variabili privatamente nel terminale/process manager tramite un metodo che non ne registri i valori; non usare un agent per leggere/source la `.env` reale. Servono i nomi in `.env.example` e, fuori Docker:
+The dashboard and Discord interface support English (`en`), Italian (`it`), Spanish (`es`), Russian (`ru`) and Chinese (`zh`). Keep the installer, operational documentation, code comments and runtime logs in English. [Locale selection and fallback](../README.md#interface-languages) describe the public behavior.
 
-- `DATABASE_URL`: database di sviluppo raggiungibile dall'host (es. PostgreSQL su localhost; Compose non pubblica il DB).
-- `UPLOADS_DIR`: directory locale scrivibile condivisa da web e bot.
-- `PUBLIC_URL`: origine della dashboard senza slash finale, con il redirect esatto registrato nell'app Discord **di test**.
+English-source typed dictionaries live in `packages/shared/src/messages.ts` (dashboard) and `packages/shared/src/bot-messages.ts` (Discord). Add every new message to all five dictionaries; tests check key and placeholder parity. `i18n.ts` validates locales and negotiates browser preferences without dependencies. The dashboard reads locale per request, sets `<html lang>` and shares it with loading/error/not-found client components. The language form uses a same-origin Next.js Server Action and a one-year HttpOnly, SameSite=Lax cookie (Secure on HTTPS); it changes presentation only, not authentication or server data.
 
-Con quelle variabili già presenti e un DB di sviluppo pronto:
+Dates use the selected locale with UTC, and interpolation leaves user content unchanged. Browser-native file-picker/validation text and Discord-owned UI follow those applications' own settings, not Doorman's dictionaries. Simplified Chinese is used for both Discord Chinese variants. For non-Docker deployments, install fonts covering Cyrillic and CJK for welcome-card rendering; Docker includes DejaVu and Noto CJK.
+
+## Development runtime (authorized environments only)
+
+`next dev`/the bot **do not automatically load the root `.env` the same way Compose does**. Configure variables privately in the terminal/process manager using a method that does not record their values; do not use an agent to read/source the actual `.env`. Use the names in `.env.example` and, outside Docker:
+
+- `DATABASE_URL`: a development database reachable from the host (e.g. PostgreSQL on localhost; Compose does not publish the DB).
+- `UPLOADS_DIR`: a writable local directory shared by web and bot.
+- `PUBLIC_URL`: the dashboard origin without a trailing slash, with the exact redirect registered in the **test** Discord app.
+
+With those variables already present and a development DB ready:
 
 ```bash
 pnpm --filter @doorman/database exec prisma db push --skip-generate
 pnpm dev:web
-# In un secondo terminale con le stesse variabili, solo quando autorizzato:
+# In a second terminal with the same variables, only when authorized:
 pnpm dev:bot
 ```
 
-Il bot registra comandi e reagisce agli ingressi reali: non avviarlo con credenziali di produzione per un check di compilazione. Cambiamenti a ruoli, code o banner vanno verificati in un server di test, con consenso.
+The bot registers commands and reacts to real joins: do not start it with production credentials for a compilation check. Changes to roles, queues or banners must be verified in a test server, with consent.
 
-## Infrastruttura
+## Infrastructure
 
-Esegui i [check locali senza deploy](infra-checks.md). Una build Docker reale scarica basi e pacchetti e richiede autorizzazione separata:
+Run the [local checks without deployment](infra-checks.md). A real Docker build downloads base images and packages and requires separate authorization:
 
 ```bash
 docker build -t doorman:local .
 ```
 
-Non avviare il progetto Compose predefinito come test automatico: schema modifica il database e bot si collega a Discord. Una verifica runtime richiede un ambiente temporaneo esplicitamente autorizzato; per base image/hardening controlla utenti, ownership volumi, Prisma/native canvas e cache Next dopo ogni aggiornamento.
+Do not start the default Compose project as an automatic test: schema modifies the database and bot connects to Discord. Runtime verification requires an explicitly authorized temporary environment; for base-image/hardening changes, check users, volume ownership, Prisma/native canvas and Next cache after every update.
 
-### Staging isolato (solo dopo autorizzazione a download e avvio container)
+### Isolated staging (only after authorization to download and start containers)
 
-Con Docker Linux, Compose v2, Git e Python 3:
+With Linux Docker, Compose v2, Git and Python 3:
 
 ```bash
 docker build -t doorman:verification .
 python scripts/verify-staging.py
 ```
 
-Lo script non legge `.env`: genera configurazione e dati sintetici fuori dal checkout. Rifiuta risorse preesistenti del progetto `doorman-verification`, sceglie una porta localhost libera e avvia solo DB/schema/web con volumi temporanei. Verifica inizializzazione e riavvio PostgreSQL non-root/read-only, schema precedente da `HEAD` popolato e upgrade senza perdita dati, healthcheck e flussi HTTP di login negato/stato invalido/logout. Non segue redirect verso Discord.
+The script does not read `.env`: it generates synthetic configuration and data outside the checkout. It refuses pre-existing resources in the `doorman-verification` project, chooses a free localhost port and starts only DB/schema/web with temporary volumes. It verifies non-root/read-only PostgreSQL initialization and restart, a populated previous schema from `HEAD` and a lossless upgrade, health checks and HTTP flows for denied login/invalid state/logout. It does not follow redirects to Discord.
 
-La suite separata `apps/web/staging/staging.test.ts` usa Prisma/PostgreSQL e filesystem reali, ma simula sessione, autorizzazione e API Discord: verifica approvazioni concorrenti, attese advisory lock osservate in PostgreSQL, rejoin, rollback e decode PNG/JPEG/WebP con Sharp/canvas nativi. Non fa parte di `pnpm test` e rifiuta l'esecuzione senza il marcatore staging. Il bot non viene mai avviato; il suo handler di join è chiamato con un membro sintetico.
+The separate `apps/web/staging/staging.test.ts` suite uses real Prisma/PostgreSQL and filesystem access, but mocks sessions, authorization and the Discord API: it verifies concurrent approvals, advisory-lock waits observed in PostgreSQL, rejoins, rollbacks and PNG/JPEG/WebP decoding with native Sharp/canvas. It is not part of `pnpm test` and refuses to run without the staging marker. The bot is never started; its join handler is called with a synthetic member.
 
-La pulizia finale elimina solo container/rete/volumi del progetto creato, anche dopo un errore; l'immagine di verifica e la cache di build restano disponibili. Il test dello schema `HEAD` non simula cambiamenti strutturali se `HEAD` e working tree hanno lo stesso schema. OAuth riuscito, permessi e assegnazioni Discord reali richiedono ancora un server di test autorizzato.
+Final cleanup removes only containers/network/volumes from the created project, even after failure; the verification image and build cache remain available. The `HEAD` schema test does not simulate structural changes if `HEAD` and the working tree have the same schema. Successful OAuth, real Discord permissions and role assignments still require an authorized test server.

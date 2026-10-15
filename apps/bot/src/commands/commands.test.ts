@@ -6,6 +6,8 @@ import {
 } from 'discord.js';
 import { prisma } from '@doorman/database';
 import { commands } from './index.js';
+import * as status from './status.js';
+import { dictionaries, descriptionLocalizations } from '../lib/i18n.js';
 
 vi.mock('@doorman/database', () => ({
   prisma: {
@@ -51,8 +53,16 @@ for (const command of commands) {
       },
     );
 
-    it('disables DM use when registering the command', () => {
-      expect(command.data.toJSON().dm_permission).toBe(false);
+    it('preserves command names, permissions and DM restrictions while localizing descriptions', () => {
+      const registration = command.data.toJSON();
+      const key = command === status ? 'statusDescription' : 'pendingDescription';
+      expect(registration.name).toBe(command === status ? 'doorman-status' : 'doorman-pending');
+      expect(registration.dm_permission).toBe(false);
+      expect(registration.default_member_permissions).toBe(String(PermissionFlagsBits.ManageGuild));
+      expect(registration.name_localizations).toBeUndefined();
+      expect(registration.options).toEqual([]);
+      expect(registration.description).toBe(dictionaries.en[key]);
+      expect(registration.description_localizations).toEqual(descriptionLocalizations(key));
     });
   });
 }

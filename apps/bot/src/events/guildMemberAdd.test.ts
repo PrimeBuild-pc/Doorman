@@ -69,6 +69,7 @@ function memberFixture() {
     },
     guild: {
       id: 'guild',
+      preferredLocale: 'en-US' as string | undefined,
       roles: { fetch: vi.fn().mockResolvedValue(roles) },
       members: { fetchMe: vi.fn().mockResolvedValue(bot) },
       channels: {
@@ -183,29 +184,46 @@ describe('member join', () => {
     expect(member.roles.add.mock.calls.map(([id]) => id)).toEqual(['safe']);
   });
 
-  it('sends a welcome for the same guild using a banner basename inside uploads', async () => {
-    const { member, channel } = memberFixture();
-    vi.mocked(prisma.guild.findUnique).mockResolvedValue({
-      defaultRoleIds: [],
-      minAccountAgeHours: 0,
-      welcomeChannelId: 'welcome',
-      bannerPath: 'guild-banner.png',
-    } as never);
-    vi.mocked(renderWelcomeCard).mockResolvedValue(Buffer.from('png'));
-    await execute(member as unknown as GuildMember);
-    expect(renderWelcomeCard).toHaveBeenCalledWith(
-      path.join('/test/uploads', 'guild-banner.png'),
-      'https://cdn.discordapp.com/avatar.png',
-      'Member',
-    );
-    expect(channel.send).toHaveBeenCalledWith({
-      content: `Welcome <@${member.id}>!`,
-      files: [{ attachment: Buffer.from('png'), name: 'welcome.png' }],
-    });
-    expect(prisma.joinEvent.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ welcomeSent: true }),
-    });
-  });
+  it.each([
+    { preferredLocale: 'en-US', locale: 'en', message: 'Welcome {mention}!' },
+    { preferredLocale: 'en-GB', locale: 'en', message: 'Welcome {mention}!' },
+    { preferredLocale: 'it', locale: 'it', message: 'Benvenuto {mention}!' },
+    { preferredLocale: 'es-ES', locale: 'es', message: '¡Bienvenido {mention}!' },
+    { preferredLocale: 'es-419', locale: 'es', message: '¡Bienvenido {mention}!' },
+    { preferredLocale: 'ru', locale: 'ru', message: 'Добро пожаловать, {mention}!' },
+    { preferredLocale: 'zh-CN', locale: 'zh', message: '欢迎 {mention}！' },
+    { preferredLocale: 'zh-TW', locale: 'zh', message: '欢迎 {mention}！' },
+    { preferredLocale: 'invalid', locale: 'en', message: 'Welcome {mention}!' },
+    { preferredLocale: undefined, locale: 'en', message: 'Welcome {mention}!' },
+  ])(
+    'sends the public welcome and card in guild language $preferredLocale',
+    async ({ preferredLocale, locale, message }) => {
+      const { member, channel } = memberFixture();
+      member.guild.preferredLocale = preferredLocale;
+      member.user.username = 'Member {mention} 中文';
+      vi.mocked(prisma.guild.findUnique).mockResolvedValue({
+        defaultRoleIds: [],
+        minAccountAgeHours: 0,
+        welcomeChannelId: 'welcome',
+        bannerPath: 'guild-banner.png',
+      } as never);
+      vi.mocked(renderWelcomeCard).mockResolvedValue(Buffer.from('png'));
+      await execute(member as unknown as GuildMember);
+      expect(renderWelcomeCard).toHaveBeenCalledWith(
+        path.join('/test/uploads', 'guild-banner.png'),
+        'https://cdn.discordapp.com/avatar.png',
+        'Member {mention} 中文',
+        locale,
+      );
+      expect(channel.send).toHaveBeenCalledWith({
+        content: message.replace('{mention}', `<@${member.id}>`),
+        files: [{ attachment: Buffer.from('png'), name: 'welcome.png' }],
+      });
+      expect(prisma.joinEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ welcomeSent: true }),
+      });
+    },
+  );
 
   it('never renders or sends to a channel belonging to another guild', async () => {
     const { member, channel } = memberFixture();

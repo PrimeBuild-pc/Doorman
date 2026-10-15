@@ -4,9 +4,11 @@ import { GET as login } from './login/route';
 import { GET as callback } from './callback/route';
 import { POST as logout } from './logout/route';
 import { decodeSession } from '../../../lib/session';
+import { locales, translate } from '@doorman/shared';
 
 vi.mock('@/lib/session', async () => import('../../../lib/session'));
-vi.mock('@doorman/shared', () => ({
+vi.mock('@doorman/shared', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@doorman/shared')>()),
   getEnv: () => ({ DISCORD_CLIENT_ID: 'test-client', DISCORD_CLIENT_SECRET: 'test-client-secret' }),
 }));
 const store = vi.hoisted(() => ({
@@ -60,6 +62,32 @@ function succeed() {
 }
 
 describe('OAuth routes', () => {
+  it.each(locales)(
+    'localizes safe API errors in %s without bypassing authentication or CSRF',
+    async (locale) => {
+      const headers = { 'accept-language': locale };
+      const invalid = await callback(
+        new NextRequest('https://dashboard.example/api/auth/callback', { headers }),
+      );
+      expect(invalid.status).toBe(400);
+      expect(await invalid.json()).toEqual({ error: translate(locale, 'invalidState') });
+      const state = await beginLogin();
+      fetchMock.mockRejectedValueOnce(new Error('private credentials'));
+      const failed = await callback(
+        new NextRequest(`https://dashboard.example/api/auth/callback?state=${state}&code=test`, {
+          headers: { 'accept-language': 'de-DE', cookie: `doorman_locale=${locale}` },
+        }),
+      );
+      expect(failed.status).toBe(502);
+      expect(await failed.json()).toEqual({ error: translate(locale, 'authenticationFailed') });
+      const forbidden = await logout(
+        new NextRequest('https://dashboard.example/api/auth/logout', { method: 'POST', headers }),
+      );
+      expect(forbidden.status).toBe(403);
+      expect(await forbidden.json()).toEqual({ error: translate(locale, 'forbidden') });
+    },
+  );
+
   it('login sends random state and canonical callback URI to Discord', async () => {
     const response = await login();
     expect(response.status).toBe(307);

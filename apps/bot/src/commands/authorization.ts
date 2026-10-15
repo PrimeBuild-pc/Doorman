@@ -1,4 +1,5 @@
 import { PermissionFlagsBits, type ChatInputCommandInteraction } from 'discord.js';
+import { interactionLocale, t } from '../lib/i18n.js';
 
 export async function requireGuildManager(
   interaction: ChatInputCommandInteraction,
@@ -7,7 +8,7 @@ export async function requireGuildManager(
   if (interaction.guildId && interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild))
     return true;
   await interaction.reply({
-    content: 'This command requires Manage Server in a server.',
+    content: t(interactionLocale(interaction), 'managerRequired'),
     ephemeral: true,
   });
   return false;

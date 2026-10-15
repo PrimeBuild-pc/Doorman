@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEnv } from '@doorman/shared';
+import { getEnv, translate } from '@doorman/shared';
+import { requestLocale } from '@/lib/locale';
 import { consumeOAuthState, publicOrigin, setSession } from '@/lib/session';
 import { z } from 'zod';
 
@@ -18,9 +19,10 @@ const userSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
+  const locale = requestLocale(request);
   const state = request.nextUrl.searchParams.get('state');
   if (!(await consumeOAuthState(state))) {
-    return NextResponse.json({ error: 'Invalid OAuth state' }, { status: 400 });
+    return NextResponse.json({ error: translate(locale, 'invalidState') }, { status: 400 });
   }
   const code = request.nextUrl.searchParams.get('code');
   if (!code || request.nextUrl.searchParams.has('error')) {
@@ -64,6 +66,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/guilds', publicOrigin()));
   } catch {
     // Never expose upstream bodies, tokens, validation input or network error details.
-    return NextResponse.json({ error: 'Discord authentication failed' }, { status: 502 });
+    return NextResponse.json({ error: translate(locale, 'authenticationFailed') }, { status: 502 });
   }
 }

@@ -7,38 +7,38 @@ umask 077
 fail() { printf '%s\n' "$1" >&2; exit 1; }
 
 if [[ -e .env || -L .env ]]; then
-  fail '.env esiste già: lasciato intatto. Per avviare la configurazione esistente, consulta docs/self-hosting.md.'
+  fail '.env already exists: left untouched. To start the existing configuration, see docs/self-hosting.md.'
 fi
-[[ -t 0 ]] || fail 'Esegui questo installer in un terminale interattivo.'
-command -v openssl >/dev/null 2>&1 || fail 'Installa OpenSSL prima di continuare.'
-command -v docker >/dev/null 2>&1 || fail 'Installa Docker prima di continuare.'
-docker compose version >/dev/null 2>&1 || fail 'Serve Docker Compose v2 con supporto --wait.'
+[[ -t 0 ]] || fail 'Run this installer in an interactive terminal.'
+command -v openssl >/dev/null 2>&1 || fail 'Install OpenSSL before continuing.'
+command -v docker >/dev/null 2>&1 || fail 'Install Docker before continuing.'
+docker compose version >/dev/null 2>&1 || fail 'Docker Compose v2 with --wait support is required.'
 
-printf '%s\n' 'Configura prima Discord seguendo docs/self-hosting.md.'
+printf '%s\n' 'First configure Discord following docs/self-hosting.md.'
 read -rp 'Discord Application ID: ' CLIENT_ID
-[[ "$CLIENT_ID" =~ ^[0-9]{17,20}$ ]] || fail 'Application ID non valido.'
-read -rsp 'Discord Client Secret (input nascosto): ' CLIENT_SECRET
+[[ "$CLIENT_ID" =~ ^[0-9]{17,20}$ ]] || fail 'Invalid Application ID.'
+read -rsp 'Discord Client Secret (hidden input): ' CLIENT_SECRET
 printf '\n'
-[[ "$CLIENT_SECRET" =~ ^[A-Za-z0-9_-]+$ ]] || fail 'Client Secret non valido.'
-read -rsp 'Discord Bot Token (input nascosto): ' BOT_TOKEN
+[[ "$CLIENT_SECRET" =~ ^[A-Za-z0-9_-]+$ ]] || fail 'Invalid Client Secret.'
+read -rsp 'Discord Bot Token (hidden input): ' BOT_TOKEN
 printf '\n'
-[[ "$BOT_TOKEN" =~ ^[A-Za-z0-9_.-]+$ ]] || fail 'Bot Token non valido.'
+[[ "$BOT_TOKEN" =~ ^[A-Za-z0-9_.-]+$ ]] || fail 'Invalid Bot Token.'
 
-read -rp 'Porta locale della dashboard [3000]: ' PORT
+read -rp 'Local dashboard port [3000]: ' PORT
 PORT=${PORT:-3000}
-[[ "$PORT" =~ ^[0-9]{1,5}$ ]] && ((10#$PORT >= 1 && 10#$PORT <= 65535)) || fail 'Porta non valida.'
+[[ "$PORT" =~ ^[0-9]{1,5}$ ]] && ((10#$PORT >= 1 && 10#$PORT <= 65535)) || fail 'Invalid port.'
 PORT=$((10#$PORT))
 read -rp "PUBLIC_URL [http://localhost:${PORT}]: " PUBLIC_URL
 PUBLIC_URL=${PUBLIC_URL:-http://localhost:${PORT}}
 PUBLIC_URL=${PUBLIC_URL%/}
-[[ "$PUBLIC_URL" =~ ^https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?$ ]] || fail 'Usa un URL http(s) senza percorso, query o credenziali.'
+[[ "$PUBLIC_URL" =~ ^https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?$ ]] || fail 'Use an http(s) URL without a path, query or credentials.'
 if [[ "$PUBLIC_URL" =~ :([0-9]+)$ ]]; then
   URL_PORT=${BASH_REMATCH[1]}
-  ((10#$URL_PORT >= 1 && 10#$URL_PORT <= 65535)) || fail 'Porta PUBLIC_URL non valida.'
+  ((10#$URL_PORT >= 1 && 10#$URL_PORT <= 65535)) || fail 'Invalid PUBLIC_URL port.'
   PUBLIC_URL=${PUBLIC_URL%:*}:$((10#$URL_PORT))
 fi
 if [[ "$PUBLIC_URL" == http://* && ! "$PUBLIC_URL" =~ ^http://(localhost|127\.0\.0\.1)(:[0-9]{1,5})?$ ]]; then
-  fail 'HTTP è consentito solo su localhost/127.0.0.1; per accesso remoto configura HTTPS.'
+  fail 'HTTP is allowed only on localhost/127.0.0.1; configure HTTPS for remote access.'
 fi
 
 AUTH_SECRET=$(openssl rand -hex 32)
@@ -56,13 +56,13 @@ set -o noclobber
 } > .env
 unset CLIENT_SECRET BOT_TOKEN AUTH_SECRET PG_PASSWORD
 
-printf 'Configurazione salvata in .env (privata). Redirect Discord: %s/api/auth/callback\n' "$PUBLIC_URL"
-printf '%s\n' 'La dashboard resta su loopback. HTTPS richiede un reverse proxy configurato separatamente.'
-read -rp 'Scaricare le immagini/dipendenze, compilare e avviare Docker e il bot Discord? Scrivi AVVIA: ' CONFIRM
-if [[ "$CONFIRM" != AVVIA ]]; then
-  printf '%s\n' 'Nessun servizio avviato. Per continuare, segui docs/self-hosting.md.'
+printf 'Configuration saved in .env (private). Discord redirect: %s/api/auth/callback\n' "$PUBLIC_URL"
+printf '%s\n' 'The dashboard stays on loopback. HTTPS requires a separately configured reverse proxy.'
+read -rp 'Download images/dependencies, build and start Docker and the Discord bot? Type START: ' CONFIRM
+if [[ "$CONFIRM" != START ]]; then
+  printf '%s\n' 'No services started. To continue, follow docs/self-hosting.md.'
   exit 0
 fi
 docker compose config --quiet
 docker compose up -d --build --wait --wait-timeout 180
-printf 'Dashboard pronta: %s (controlla anche i log del bot).\n' "$PUBLIC_URL"
+printf 'Dashboard ready: %s (also check the bot logs).\n' "$PUBLIC_URL"
