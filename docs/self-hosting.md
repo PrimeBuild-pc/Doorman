@@ -1,27 +1,27 @@
 # Self-hosting
 
-## 1. Prerequisiti e Discord
+## 1. Prerequisites and Discord
 
-Usa un host con container Linux, Docker Engine/Desktop, Docker Compose v2 recente (`--wait`, `service_completed_successfully` e `pull_policy`), Git, Bash e OpenSSL. Su Windows esegui l'installer in WSL o Git Bash con Docker Desktop in modalità Linux. Proteggi l'accesso al daemon Docker: equivale a privilegi amministrativi sull'host.
+Use a host with Linux containers, Docker Engine/Desktop, a recent Docker Compose v2 (`--wait`, `service_completed_successfully` and `pull_policy`), Git, Bash and OpenSSL. On Windows, run the installer in WSL or Git Bash with Docker Desktop in Linux mode. Protect access to the Docker daemon: it is equivalent to administrative privileges on the host.
 
-Nel [Discord Developer Portal](https://discord.com/developers/applications):
+In the [Discord Developer Portal](https://discord.com/developers/applications):
 
-1. Crea un'applicazione; copia **Application ID** da General Information.
-2. In **Bot**, abilita **Server Members Intent**. Presence Intent e Message Content Intent non servono; gli intent non privilegiati Guilds/GuildInvites sono richiesti dal codice. Eventuali app verificate devono ottenere l'approvazione Discord per gli intent privilegiati.
-3. Genera/copia il Bot Token e, in **OAuth2**, il Client Secret. Conservali in un password manager; non incollarli in chat, issue, screenshot o nella cronologia shell.
-4. In **OAuth2 → Redirects**, aggiungi esattamente `http://localhost:3000/api/auth/callback` per il default locale; per HTTPS usa `https://doorman.example.org/api/auth/callback`. Schema, host e porta devono coincidere con `PUBLIC_URL`, senza slash finale nell'origine. Il login richiede `identify guilds`, non il permesso di invitare il bot.
-5. In **Installation** scegli Guild Install (se richiesto dal portale); in **OAuth2 → URL Generator** seleziona `bot` e `applications.commands`. Invita l'app solo nel server desiderato.
+1. Create an application; copy the **Application ID** from General Information.
+2. Under **Bot**, enable **Server Members Intent**. Presence Intent and Message Content Intent are not needed; the code requires the non-privileged Guilds/GuildInvites intents. Verified apps must obtain Discord approval for privileged intents.
+3. Generate/copy the Bot Token and, under **OAuth2**, the Client Secret. Store them in a password manager; do not paste them into chat, issues, screenshots or shell history.
+4. Under **OAuth2 → Redirects**, add exactly `http://localhost:3000/api/auth/callback` for the local default; for HTTPS, use `https://doorman.example.org/api/auth/callback`. Scheme, host and port must match `PUBLIC_URL`, with no trailing slash in the origin. Login requires `identify guilds`, not permission to invite the bot.
+5. Under **Installation**, choose Guild Install (if the portal requests it); under **OAuth2 → URL Generator**, select `bot` and `applications.commands`. Invite the app only to the desired server.
 
-### Permessi minimi
+### Minimum permissions
 
-- **Manage Roles** per assegnare ruoli. Il ruolo Doorman deve essere **sopra i ruoli da assegnare**, non sopra amministratori/moderatori. Escludi ruoli gestiti dalle integrazioni e `@everyone`.
-- Nel solo canale di benvenuto: **View Channel, Send Messages, Attach Files**. Se non usi card, questi permessi non sono necessari a quella funzione.
-- **Manage Server / Manage Guild** solo se usi i ruoli per invito: serve a leggere tutti gli inviti e i relativi contatori. Senza, l'autorole base continua a funzionare, ma l'attribuzione degli inviti no.
-- **Administrator, Ban Members, Kick Members, Manage Channels, Message Content** non servono. Negare un'approvazione non espelle il membro: non gli concede i ruoli.
+- **Manage Roles** to assign roles. The Doorman role must be **above the roles to assign**, not above administrators/moderators. Exclude integration-managed roles and `@everyone`.
+- Only in the welcome channel: **View Channel, Send Messages, Attach Files**. If you do not use cards, these permissions are not needed for that feature.
+- **Manage Server / Manage Guild** only if you use invite-based roles: it is needed to read all invites and their counters. Without it, basic autorole still works, but invite attribution does not.
+- **Administrator, Ban Members, Kick Members, Manage Channels, Message Content** are not needed. Denying approval does not remove the member: it does not grant them roles.
 
-L'utente della dashboard deve essere proprietario o avere Manage Server/Administrator. Questi sono permessi dell'utente, non una ragione per dare Administrator al bot. Le slash command sono globali: la prima registrazione può richiedere tempo per propagarsi.
+The dashboard user must be the owner or have Manage Server/Administrator. These are user permissions, not a reason to give the bot Administrator. Slash commands are global: their first registration may take time to propagate.
 
-## 2. Installare e verificare
+## 2. Install and verify
 
 ```bash
 git clone --config core.autocrlf=false https://github.com/PrimeBuild-pc/Doorman.git
@@ -29,16 +29,16 @@ cd Doorman
 bash install.sh
 ```
 
-L'installer salva `.env` con permessi privati e valori casuali distinti per cifratura sessioni/password DB; token e Client Secret hanno input nascosto. Rifiuta `.env` esistente, anche se è un link: non ruota credenziali o password di database già inizializzati. Accetta un'origine HTTP locale oppure HTTPS senza percorso. `DOORMAN_BIND_ADDRESS` rimane `127.0.0.1`; la porta è configurabile.
+The installer saves `.env` with private permissions and separate random values for session encryption/the DB password; the token and Client Secret use hidden input. It refuses an existing `.env`, even if it is a link: it does not rotate credentials or passwords for already initialized databases. It accepts a local HTTP origin or HTTPS without a path. `DOORMAN_BIND_ADDRESS` remains `127.0.0.1`; the port is configurable. The installer is English-only; the dashboard and Discord interface support English (`en`), Italian (`it`), Spanish (`es`), Russian (`ru`) and Chinese (`zh`).
 
-**Doorman e D-View sullo stesso homelab:** entrambi propongono la porta 3000.
-Nell'installer Doorman scegli **3001**, usa `PUBLIC_URL=http://localhost:3001`
-e registra `http://localhost:3001/api/auth/callback` in Discord. D-View può restare
-su 3000 e Gnosis su 8080. Mantieni applicazioni Discord, `.env`, database e volumi
-separati; non riutilizzare token o password. Nel tunnel SSH usa
-`-L 3001:127.0.0.1:3001` e apri `http://localhost:3001`.
+**Doorman and D-View on the same homelab:** both default to port 3000.
+In the Doorman installer, choose **3001**, use `PUBLIC_URL=http://localhost:3001`
+and register `http://localhost:3001/api/auth/callback` in Discord. D-View can stay
+on 3000 and Gnosis on 8080. Keep Discord apps, `.env` files, databases and volumes
+separate; do not reuse tokens or passwords. In the SSH tunnel, use
+`-L 3001:127.0.0.1:3001` and open `http://localhost:3001`.
 
-Solo digitando `AVVIA` autorizzi download, build e connessione del bot a Discord. Se annulli dopo il salvataggio, per avviare successivamente:
+Only typing `START` authorizes downloads, builds and the bot's connection to Discord. If you cancel after saving, start later with:
 
 ```bash
 docker compose config --quiet
@@ -47,47 +47,47 @@ docker compose ps -a
 docker compose logs --tail=80 schema bot web
 ```
 
-`config --quiet` valida senza stampare segreti; evita `docker compose config` senza questa opzione. Non pubblicare log grezzi senza controllo/redazione. `--wait` verifica PostgreSQL e HTTP; **non certifica il login Discord del bot**: controlla nei log il messaggio di login e il server atteso.
+`config --quiet` validates without printing secrets; avoid `docker compose config` without this option. Do not publish raw logs without review/redaction. `--wait` checks PostgreSQL and HTTP; **it does not certify the bot's Discord login**: check the logs for the login message and expected server.
 
-Il database non pubblica porte sull'host. Il controllo DB usa TCP per attendere il server finale, non il server temporaneo di inizializzazione. Il job `schema` esegue una sola sincronizzazione Prisma e deve terminare con codice 0 prima di bot/web. Non ci sono migration versionate: `db push` rifiuta cambiamenti che richiedono accettazione della perdita di dati; non forzare il flag di accettazione.
+The database publishes no host ports. The DB check uses TCP to wait for the final server, not the temporary initialization server. The `schema` job performs a single Prisma synchronization and must exit with code 0 before bot/web. There are no versioned migrations: `db push` refuses changes that require accepting data loss; do not force the acceptance flag.
 
-I container usano utenti non-root, filesystem root read-only e nessuna capability aggiuntiva. Solo DB/banner/cache temporanee sono scrivibili. Il bot monta i banner in sola lettura. Le dipendenze vengono installate con il lockfile obbligatorio e pnpm fissato; bot/web/schema usano la stessa immagine locale compilata, non un `latest` remoto. Le versioni base sono fissate a tag espliciti; tag e repository apt non sono immutabili: per una build byte-identica servirebbero digest verificati e snapshot apt. Aggiorna periodicamente le basi con controllo vulnerabilità e test.
+Containers use non-root users, read-only root filesystems and no additional capabilities. Only DB/banners/temporary caches are writable. The bot mounts banners read-only. Dependencies are installed with the lockfile required and pnpm pinned; bot/web/schema use the same locally built image, not a remote `latest`. Base versions are pinned to explicit tags; tags and apt repositories are not immutable: byte-identical builds would require verified digests and apt snapshots. Update base images periodically with vulnerability checks and tests.
 
-Apri `http://localhost:3000`, accedi con Discord, scegli il server, imposta ruoli non privilegiati e, se desiderato, canale/banner/soglia d'età. Prova prima in un server di test con un account autorizzato: verificare assegnazione, messaggio e approvazioni modifica realmente Discord.
+Open `http://localhost:3000`, log in with Discord, choose the server, configure non-privileged roles and, if desired, the channel/banner/account-age threshold. First try a test server with an authorized account: verifying role assignment, messages and approvals really changes Discord.
 
-### Limiti operativi e sicurezza dei server
+### Operational limits and server security
 
-Puoi invitare la stessa app in più server: ogni impostazione e mutazione resta scoped all'ID server. Il cookie di sessione è cifrato e autenticato; non contiene la lista dei server. I permessi OAuth e la presenza del bot vengono controllati nuovamente a ogni pagina/modifica: un errore o una revoca bloccano l'accesso. Le sessioni vecchie della versione precedente vengono invalidate; scadenza del token o rotazione `AUTH_SECRET` richiedono un nuovo login.
+You can invite the same app to multiple servers: every setting and mutation remains scoped to the server ID. The session cookie is encrypted and authenticated; it does not contain the server list. OAuth permissions and the bot's presence are rechecked on every page/change: an error or revocation blocks access. Old sessions from the previous version are invalidated; token expiration or `AUTH_SECRET` rotation requires a new login.
 
-Ruoli con privilegi amministrativi/moderativi, anche tramite override di canali/categorie, vengono esclusi e rivalidati prima della concessione. Questo non sostituisce la revisione delle autorizzazioni Discord: un ruolo può dare accesso a canali privati o funzioni di altri bot. Usa solo ruoli di ingresso a basso privilegio.
+Roles with administrative/moderation privileges, including through channel/category overrides, are excluded and revalidated before being granted. This does not replace a Discord permission review: a role may grant access to private channels or other bots' features. Use only low-privilege entry roles.
 
-I banner accettano PNG/JPEG/WebP singoli fino a 5 MiB e 16 megapixel; vengono decodificati e ricampionati in PNG 1024×450. Le sostituzioni rimuovono normalmente il file precedente; upload contemporanei/interruzioni possono lasciare file inutilizzati, da pulire solo dopo backup e confronto con DB.
+Banners accept single PNG/JPEG/WebP images up to 5 MiB and 16 megapixels; they are decoded and resampled to 1024×450 PNG. Replacements normally remove the previous file; concurrent uploads/interruptions may leave unused files, to be cleaned up only after backup and comparison with the DB.
 
-Un rejoin supera le richieste pendenti precedenti; l'approvazione verifica il timestamp di ingresso attuale su Discord. Le vecchie richieste create prima di questa versione possono essere rifiutate perché usavano un timestamp locale: verifica privatamente il membro e i ruoli in Discord e nega/archivia la richiesta obsoleta. Negare non rimuove ruoli esistenti, non kicka e non banna.
+A rejoin supersedes previous pending requests; approval checks the current join timestamp on Discord. Old requests created before this version may be rejected because they used a local timestamp: privately verify the member and roles in Discord and deny/archive the obsolete request. Denying does not remove existing roles, kick or ban.
 
-SQL e Discord non sono una transazione unica: un errore durante un'approvazione può concedere alcuni ruoli lasciando la richiesta pendente. Verifica Discord prima di ritentare; i PUT dei ruoli sono idempotenti. Anche i permessi o la membership possono cambiare fra controllo e chiamata API: non usare questo bot come sistema di controllo accessi ad alta garanzia. La coda mostra al massimo 100 membri per pagina; dopo le decisioni ricarica per vedere gli altri. Dati di configurazione e storico restano nel DB se il bot lascia un server; pianifica pulizia/retention e backup secondo le necessità della community.
+SQL and Discord are not a single transaction: an error during approval may grant some roles while leaving the request pending. Check Discord before retrying; role PUTs are idempotent. Permissions or membership can also change between the check and API call: do not use this bot as a high-assurance access-control system. The queue shows at most 100 members per page; after decisions, reload to see others. Configuration data and history remain in the DB if the bot leaves a server; plan cleanup/retention and backups according to the community's needs.
 
-## 3. Accesso remoto
+## 3. Remote access
 
-Per amministrare da un altro computer senza esporre porte:
+To administer from another computer without exposing ports:
 
 ```bash
-ssh -N -L 3000:127.0.0.1:3000 utente@host-doorman
+ssh -N -L 3000:127.0.0.1:3000 user@doorman-host
 ```
 
-Apri `http://localhost:3000` sul computer del browser; mantieni l'origine e il redirect locali. Se la porta dell'host è diversa, cambia il secondo `3000`; il primo deve corrispondere all'URL del browser.
+Open `http://localhost:3000` on the browser computer; keep the local origin and redirect. If the host port differs, change the second `3000`; the first must match the browser URL.
 
-Per un dominio pubblico, configura sull'host un reverse proxy con certificato TLS valido verso `127.0.0.1:3000`. Imposta privatamente `PUBLIC_URL=https://doorman.example.org`, registra il redirect identico in Discord e ricrea i servizi:
+For a public domain, configure a reverse proxy on the host with a valid TLS certificate pointing to `127.0.0.1:3000`. Privately set `PUBLIC_URL=https://doorman.example.org`, register the identical redirect in Discord and recreate the services:
 
 ```bash
 docker compose up -d --build --wait --wait-timeout 180
 ```
 
-Il web deve usare il protocollo di `PUBLIC_URL` per i cookie `Secure`: HTTPS anche se il proxy parla HTTP all'app, HTTP solo per il default locale. Proteggi il proxy con firewall e preserva Host/forwarded headers senza fidarti di quelli forniti dal client. Un proxy in un altro container richiede una rete/configurazione dedicata: `127.0.0.1` in quel container non è l'host. Non cambiare il bind a `0.0.0.0` come scorciatoia per HTTPS.
+The web must use the `PUBLIC_URL` scheme for `Secure` cookies: HTTPS even if the proxy speaks HTTP to the app, HTTP only for the local default. Protect the proxy with a firewall and preserve Host/forwarded headers without trusting client-supplied values. A proxy in another container requires dedicated networking/configuration: `127.0.0.1` in that container is not the host. Do not change the bind to `0.0.0.0` as an HTTPS shortcut.
 
-## 4. Backup coerente
+## 4. Consistent backups
 
-Salva database, banner, `.env` e commit del codice. Gli archivi contengono dati personali; conserva copie cifrate fuori host e prova il ripristino. Esegui dalla root, con spazio disponibile; i servizi restano fermi se un comando fallisce: riavviali solo dopo aver risolto.
+Save the database, banners, `.env` and code commit. Archives contain personal data; keep encrypted off-host copies and test restoration. Run from the root, with available disk space; services remain stopped if a command fails: restart them only after resolving the problem.
 
 ```bash
 set -e
@@ -104,20 +104,20 @@ git rev-parse HEAD > "$BACKUP/commit.txt"
 docker compose start bot web
 ```
 
-Il percorso predefinito è fuori dal checkout: mantieni anche eventuali percorsi alternativi fuori dal repository e dal contesto Docker. L'attuale `.dockerignore` non esclude cartelle di backup arbitrarie.
+The default path is outside the checkout: keep any alternative paths outside the repository and Docker context too. The current `.dockerignore` does not exclude arbitrary backup directories.
 
-### Ripristino (distruttivo: conferma e backup prima)
+### Restore (destructive: confirm and back up first)
 
-Sul commit e sulla versione PostgreSQL compatibili con il backup, crea/configura privatamente `.env` per l'host di destinazione. Non sovrascrivere credenziali esistenti senza un piano. Usa un backup fidato e sostituisci il percorso di esempio:
+On a commit and PostgreSQL version compatible with the backup, privately create/configure `.env` for the target host. Do not overwrite existing credentials without a plan. Use a trusted backup and replace the example path:
 
 ```bash
 set -e
-BACKUP=/percorso/privato/del/backup
+BACKUP=/private/path/to/backup
 docker compose stop bot web
 docker compose up -d --wait db
 docker compose exec -T db pg_restore -U doorman -d doorman \
   --clean --if-exists --no-owner --exit-on-error < "$BACKUP/database.dump"
-# Il restore DB sovrascrive dati; la riga seguente elimina tutti i banner attuali.
+# The DB restore overwrites data; the next command deletes all current banners.
 docker compose run --rm --no-deps -T --entrypoint sh web \
   -c 'set -e; find /data/uploads -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +; tar -xzf - -C /data/uploads' \
   < "$BACKUP/uploads.tar.gz"
@@ -125,23 +125,23 @@ docker compose rm -f schema
 docker compose up -d --build --wait --wait-timeout 180
 ```
 
-## 5. Aggiornare
+## 5. Updates
 
-Prima backup; controlla release/diff e scegli un commit/tag revisionato, senza aggiornamento automatico. Esegui `git fetch` solo quando autorizzi accesso rete; `git checkout` richiede working tree pulito e un riferimento reale al posto del segnaposto:
+Back up first; review the release/diff and choose a reviewed commit/tag, without automatic updates. Run `git fetch` only when network access is authorized; `git checkout` requires a clean working tree and a real reference in place of the placeholder:
 
 ```bash
 git fetch --tags origin
-git checkout <commit-o-tag-revisionato>
+git checkout <reviewed-commit-or-tag>
 docker compose stop bot web
 docker compose rm -f schema
 docker compose up -d --build --wait --wait-timeout 180
 ```
 
-Rimuovere il solo container `schema` forza la verifica anche se l'immagine non cambia. **Mai `docker compose down -v` per aggiornare**: cancella DB e banner. Se lo schema cambia in modo incompatibile, tornare al codice precedente non basta: ripristina anche il backup DB/banner compatibile. Cambiare `POSTGRES_PASSWORD` in `.env` non cambia la password di un database esistente; serve una rotazione SQL esplicita, concordata, e l'aggiornamento coordinato dei client.
+Removing only the `schema` container forces the check even if the image has not changed. **Never use `docker compose down -v` to update**: it deletes the DB and banners. If the schema changes incompatibly, reverting code alone is not enough: also restore the compatible DB/banner backup. Changing `POSTGRES_PASSWORD` in `.env` does not change the password of an existing database; it requires explicit, agreed SQL rotation and coordinated client updates.
 
-### Volumi provenienti dalla vecchia versione root
+### Volumes from the old root version
 
-Prima di usare la versione non-root, fai il backup. I banner esistenti possono essere di root; se l'upload fallisce per permessi, ferma bot/web e autorizza una correzione limitata al volume:
+Before using the non-root version, back up. Existing banners may be owned by root; if uploads fail due to permissions, stop bot/web and authorize a fix limited to the volume:
 
 ```bash
 docker compose stop bot web
@@ -150,17 +150,17 @@ docker compose run --rm --no-deps --user root --cap-add CHOWN \
 docker compose up -d --build --wait --wait-timeout 180
 ```
 
-Questo comando è l'eccezione temporanea non-root, non la configurazione permanente. PostgreSQL mantiene il major 16 e la directory dati precedente; se il volume DB ha ownership anomala, chiedi una diagnosi prima di cambiarla.
+This command is the temporary exception to non-root operation, not the permanent configuration. PostgreSQL keeps major version 16 and the previous data directory; if the DB volume has unusual ownership, request diagnosis before changing it.
 
 ## 6. Troubleshooting
 
-- **Variabile richiesta mancante:** compila privatamente `.env` seguendo `.env.example`; nessun fallback password di default. Compose ignora `DATABASE_URL`/`UPLOADS_DIR` dell'host per i servizi, derivandoli dalla sua configurazione.
-- **DB unhealthy:** `docker compose logs --tail=80 db`; verifica spazio, permessi e password del volume originale. Non cancellare volumi per “riparare”.
-- **Schema fallito:** `docker compose logs --tail=80 schema`; verifica compatibilità, fai backup e pianifica una migration manuale se necessario. Bot/web bloccati in questo caso è intenzionale.
-- **401/token o intent disallowed:** verifica privatamente token/app corretti e Server Members Intent; ricrea il bot dopo una rotazione. La modifica intent o token nel portale richiede consenso.
-- **Redirect OAuth/login che torna alla home:** confronta privatamente origine/porta/protocollo e redirect esatto; per HTTPS verifica TLS/proxy/cookie Secure; il browser deve poter raggiungere `PUBLIC_URL`. Non raccogliere cookie o codici OAuth nei log.
-- **Server assente:** verifica che il bot sia stato invitato proprio lì, che sia connesso e che l'utente abbia Manage Server o sia proprietario. I permessi vengono riletti da Discord a ogni pagina e modifica; se il token OAuth è scaduto, esegui nuovamente il login.
-- **Ruoli non assegnati:** Manage Roles, gerarchia e ruolo non gestito/non privilegiato. La negazione nella coda non kicka/banna.
-- **Card assente:** banner valido, canale di testo normale, permessi View/Send/Attach; controlla ownership del volume. Un'approvazione concede i ruoli configurati, non promette l'invio retroattivo della card.
-- **Invito non riconosciuto:** Manage Server è necessario. Vanity URL, inviti eliminati/scaduti o ingressi simultanei rendono l'associazione ambigua; non usarla come prova di identità o confine di sicurezza.
-- **Build fallisce:** non rigenerare il lockfile durante il deploy; usa checkout completo, Node/pnpm compatibili e spazio sufficiente. Vedi [verifiche locali](infra-checks.md). La prima build richiede rete; il job schema richiede un DB reale.
+- **Missing required variable:** privately fill in `.env` following `.env.example`; there is no default-password fallback. Compose ignores the host's `DATABASE_URL`/`UPLOADS_DIR` for services, deriving them from its own configuration.
+- **DB unhealthy:** `docker compose logs --tail=80 db`; check disk space, permissions and the original volume password. Do not delete volumes to “repair” them.
+- **Schema failed:** `docker compose logs --tail=80 schema`; check compatibility, back up and plan a manual migration if needed. Blocking bot/web in this case is intentional.
+- **401/token or intent disallowed:** privately verify the correct token/app and Server Members Intent; recreate the bot after rotation. Changing intents or tokens in the portal requires consent.
+- **OAuth redirect/login returns to the home page:** privately compare origin/port/scheme and the exact redirect; for HTTPS, check TLS/proxy/Secure cookies; the browser must be able to reach `PUBLIC_URL`. Do not collect cookies or OAuth codes in logs.
+- **Server missing:** verify that the bot was invited to that exact server, is connected and that the user has Manage Server or is the owner. Permissions are reread from Discord on every page and change; if the OAuth token has expired, log in again.
+- **Roles not assigned:** check Manage Roles, hierarchy and that the role is unmanaged/non-privileged. Denying a queued request does not kick/ban.
+- **Card missing:** check a valid banner, a regular text channel, View/Send/Attach permissions and volume ownership. Approval grants configured roles; it does not promise retroactive card delivery.
+- **Invite not recognized:** Manage Server is required. Vanity URLs, deleted/expired invites or simultaneous joins make attribution ambiguous; do not use it as proof of identity or a security boundary.
+- **Build fails:** do not regenerate the lockfile during deployment; use a complete checkout, compatible Node/pnpm and sufficient disk space. See [local checks](infra-checks.md). The first build requires network access; the schema job requires a real DB.

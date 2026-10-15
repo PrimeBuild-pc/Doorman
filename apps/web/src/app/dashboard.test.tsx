@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
+  getLocale: vi.fn(),
   manageableGuilds: vi.fn(),
   assertCanManageGuild: vi.fn(),
   fetchGuildRoles: vi.fn(),
@@ -16,6 +17,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/session', () => ({ getSession: mocks.getSession }));
+vi.mock('@/lib/locale', () => ({ getLocale: mocks.getLocale }));
+vi.mock('./locale-action', () => ({ changeLocale: vi.fn() }));
 vi.mock('@/lib/discordApi', () => ({
   manageableGuilds: mocks.manageableGuilds,
   assertCanManageGuild: mocks.assertCanManageGuild,
@@ -45,6 +48,11 @@ import GuildsPage from './guilds/page';
 import GuildSettingsPage from './guilds/[guildId]/page';
 import DashboardError from './error';
 import { FormButton } from './form-button';
+import RootLayout from './layout';
+import Loading from './loading';
+import NotFound from './not-found';
+import { LocaleProvider } from './locale-provider';
+import { locales, translate, type Locale } from '@doorman/shared';
 
 const session = { accessToken: 'test-token' };
 const guild = { id: '123', name: 'Test server' };
@@ -52,6 +60,7 @@ const guild = { id: '123', name: 'Test server' };
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.getSession.mockResolvedValue(session);
+  mocks.getLocale.mockResolvedValue('en');
   mocks.manageableGuilds.mockResolvedValue([guild]);
   mocks.assertCanManageGuild.mockResolvedValue(guild);
   mocks.findGuild.mockResolvedValue({ defaultRoleIds: [], minAccountAgeHours: 0 });
@@ -72,6 +81,54 @@ async function settingsHtml(searchParams: { notice?: string; error?: string } = 
 }
 
 describe('dashboard UI', () => {
+  it.each(locales)(
+    'renders all dashboard states in %s, preserving user content',
+    async (locale) => {
+      mocks.getLocale.mockResolvedValue(locale);
+      mocks.manageableGuilds.mockResolvedValue([{ id: '123', name: '<Custom {name}>' }]);
+      const list = renderToStaticMarkup(await GuildsPage());
+      expect(list).toContain(translate(locale, 'servers'));
+      expect(list).toContain('&lt;Custom {name}&gt;');
+      expect(list).toContain(translate(locale, 'logout'));
+      const settings = await settingsHtml({ notice: 'saved' });
+      for (const key of [
+        'settings',
+        'defaultRoles',
+        'welcomeBanner',
+        'inviteRoles',
+        'noPending',
+        'saved',
+        'save',
+      ] as const) {
+        expect(settings).toContain(translate(locale, key).replaceAll('&', '&amp;'));
+      }
+      const failed = await settingsHtml({ error: 'secret' });
+      const renderText = (text: string) =>
+        renderToStaticMarkup(React.createElement('span', null, text)).slice(6, -7);
+      expect(failed).toContain(renderText(translate(locale, 'changeError')));
+      const wrap = (child: React.ReactNode, value: Locale) =>
+        React.createElement(LocaleProvider, { locale: value, children: child });
+      expect(renderToStaticMarkup(wrap(React.createElement(Loading), locale))).toContain(
+        translate(locale, 'loading'),
+      );
+      expect(renderToStaticMarkup(wrap(React.createElement(NotFound), locale))).toContain(
+        translate(locale, 'notFound'),
+      );
+      const error = renderToStaticMarkup(
+        wrap(
+          React.createElement(DashboardError, { error: new Error('secret'), reset: vi.fn() }),
+          locale,
+        ),
+      );
+      expect(error).toContain(translate(locale, 'unavailable'));
+      expect(error).not.toContain('secret');
+      const layout = renderToStaticMarkup(await RootLayout({ children: 'child' }));
+      expect(layout).toContain(`lang="${locale}"`);
+      expect(layout).toContain('name="locale"');
+      expect(layout).toContain(translate(locale, 'applyLanguage'));
+    },
+  );
+
   it('uses current authorization for the server list and shows an empty hint', async () => {
     mocks.manageableGuilds.mockResolvedValue([]);
     const html = renderToStaticMarkup(await GuildsPage());

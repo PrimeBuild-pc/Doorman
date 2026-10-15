@@ -1,4 +1,10 @@
+'use client';
+
+import { translate } from '@doorman/shared';
+import { useLocale } from './locale-provider';
+
 export default function Loading() {
+  const locale = useLocale();
   return (
     <main
       id="main-content"
@@ -8,7 +14,7 @@ export default function Loading() {
     >
       <h1 className="text-2xl font-bold">Doorman</h1>
       <p role="status" className="text-gray-300">
-        Loading your server dashboard…
+        {translate(locale, 'loading')}
       </p>
     </main>
   );

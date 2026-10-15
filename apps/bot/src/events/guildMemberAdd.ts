@@ -1,9 +1,10 @@
 import path from 'node:path';
 import { Events, PermissionFlagsBits, type GuildMember } from 'discord.js';
 import { prisma } from '@doorman/database';
-import { accountAgeHours, getEnv, isSafeAutoRole } from '@doorman/shared';
+import { accountAgeHours, getEnv, isSafeAutoRole, resolveLocale } from '@doorman/shared';
 import { resolveUsedInviteCode } from '../lib/inviteCache.js';
 import { renderWelcomeCard } from '../lib/welcomeCard.js';
+import { t } from '../lib/i18n.js';
 
 export const name = Events.GuildMemberAdd;
 
@@ -105,14 +106,16 @@ export async function execute(member: GuildMember): Promise<void> {
         ) {
           throw new Error('Banner path must be a filename within UPLOADS_DIR');
         }
+        const locale = resolveLocale(member.guild.preferredLocale);
         const bannerFile = path.join(getEnv().UPLOADS_DIR, bannerPath);
         const card = await renderWelcomeCard(
           bannerFile,
           member.user.displayAvatarURL({ extension: 'png', size: 256 }),
           member.user.username,
+          locale,
         );
         await channel.send({
-          content: `Welcome <@${member.id}>!`,
+          content: t(locale, 'welcomeMessage', { mention: `<@${member.id}>` }),
           files: [{ attachment: card, name: 'welcome.png' }],
         });
         welcomeSent = true;

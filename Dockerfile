@@ -1,6 +1,6 @@
-# glibc and a sans-serif font are required by @napi-rs/canvas welcome cards.
+# glibc and Latin/Cyrillic/CJK fonts are required by localized @napi-rs/canvas welcome cards.
 FROM node:22.20.0-bookworm-slim AS base
-RUN apt-get update && apt-get install -y --no-install-recommends openssl fonts-dejavu-core \
+RUN apt-get update && apt-get install -y --no-install-recommends openssl fonts-dejavu-core fonts-noto-cjk \
     && rm -rf /var/lib/apt/lists/*
 ENV COREPACK_HOME=/opt/corepack
 RUN corepack enable && corepack install --global pnpm@11.9.0

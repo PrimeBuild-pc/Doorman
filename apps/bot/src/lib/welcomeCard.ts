@@ -1,4 +1,6 @@
 import { createCanvas, loadImage } from '@napi-rs/canvas';
+import { resolveLocale } from '@doorman/shared';
+import { t } from './i18n.js';
 
 const WIDTH = 1024;
 const HEIGHT = 450;
@@ -9,6 +11,7 @@ export async function renderWelcomeCard(
   bannerFilePath: string,
   avatarUrl: string,
   username: string,
+  locale?: string | null,
 ): Promise<Buffer> {
   const canvas = createCanvas(WIDTH, HEIGHT);
   const ctx = canvas.getContext('2d');
@@ -53,7 +56,7 @@ export async function renderWelcomeCard(
 
   ctx.fillStyle = '#d1d5db';
   ctx.font = '28px sans-serif';
-  ctx.fillText('welcome to the server', ax + AVATAR_SIZE + 30, ay + r + 34);
+  ctx.fillText(t(resolveLocale(locale), 'welcomeCard'), textX, ay + r + 34, WIDTH - textX - 40);
 
   return canvas.encode('png');
 }

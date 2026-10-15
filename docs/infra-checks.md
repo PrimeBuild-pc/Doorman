@@ -1,8 +1,8 @@
-# Check infrastruttura senza deploy
+# Infrastructure checks without deployment
 
-Questo check usa solo file del repository e credenziali **fittizie** in una directory temporanea. Non legge `.env`, non contatta Discord, non scarica immagini, non avvia Docker né accede al daemon. Serve Docker Compose installato (solo il parser locale), Bash, `sh` e Python 3. Il codice verifica sintassi, guardia anti-sovrascrittura, rifiuto input non interattivo, dispatch/failure dell'entrypoint e ordine/bind/permessi Compose.
+This check uses only repository files and **fake** credentials in a temporary directory. It does not read `.env`, contact Discord, download images, start Docker or access the daemon. It requires installed Docker Compose (only the local parser), Bash, `sh` and Python 3. The code checks syntax, overwrite protection, rejection of non-interactive input, entrypoint dispatch/failure and Compose ordering/binding/permissions.
 
-Dalla root, esegui il blocco seguente:
+From the root, run the following block:
 
 ```bash
 python - <<'PY'
@@ -92,14 +92,14 @@ with tempfile.TemporaryDirectory(prefix='doorman-check-') as tmp:
 installer = (root / 'install.sh').read_text()
 assert 'read -rsp' in installer and 'set -o noclobber' in installer
 assert installer.count('openssl rand -hex 32') == 2
-assert '"$CONFIRM" != AVVIA' in installer
+assert '"$CONFIRM" != START' in installer
 image = (root / 'Dockerfile').read_text()
 assert 'pnpm install --frozen-lockfile' in image and 'USER node' in image
 assert 'pnpm build' in image and 'corepack install --global pnpm@11.9.0' in image
-print('Infra checks OK (nessun deploy).')
+print('Infrastructure checks OK (no deployment).')
 PY
 ```
 
-Su host Unix con `pty`, la prova interattiva dell'installer può essere svolta in una copia temporanea con un comando `docker` simulato; non usare il checkout reale per prove che generano `.env`. L'input nascosto e la creazione iniziale sono verificati staticamente dal check sopra, non end-to-end.
+On Unix hosts with `pty`, the interactive installer can be tested in a temporary copy with a mocked `docker` command; do not use the actual checkout for tests that generate `.env`. Hidden input and initial creation are checked statically by the check above, not end-to-end.
 
-Questi check **non dimostrano** che l'immagine compili/esegua correttamente, che PostgreSQL inizializzi i volumi, che Prisma applichi lo schema o che OAuth/Discord funzionino. Build, smoke test container, scansioni Hadolint/Dockle/Trivy e test Discord richiedono strumenti/ambiente e autorizzazione separati. Non installare scanner o eseguire container privilegiati come effetto collaterale di questo check.
+These checks **do not prove** that the image builds/runs correctly, PostgreSQL initializes volumes, Prisma applies the schema or OAuth/Discord work. Builds, container smoke tests, Hadolint/Dockle/Trivy scans and Discord tests require separate tools/environment and authorization. Do not install scanners or run privileged containers as a side effect of this check.

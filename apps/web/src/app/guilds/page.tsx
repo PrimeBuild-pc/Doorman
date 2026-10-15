@@ -2,8 +2,11 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@doorman/database';
 import { getSession } from '@/lib/session';
 import { manageableGuilds } from '@/lib/discordApi';
+import { translate } from '@doorman/shared';
+import { getLocale } from '@/lib/locale';
 
 export default async function GuildsPage() {
+  const locale = await getLocale();
   const session = await getSession();
   if (!session) redirect('/api/auth/login');
 
@@ -17,19 +20,17 @@ export default async function GuildsPage() {
   return (
     <main id="main-content" tabIndex={-1} className="mx-auto max-w-2xl px-4 py-8 sm:px-8">
       <header className="mb-3 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Your servers</h1>
+        <h1 className="text-2xl font-bold">{translate(locale, 'servers')}</h1>
         <form action="/api/auth/logout" method="post">
           <button
             type="submit"
             className="rounded px-3 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
           >
-            Log out
+            {translate(locale, 'logout')}
           </button>
         </form>
       </header>
-      <p className="mb-6 text-sm text-gray-300">
-        Choose a server to manage welcome messages and member roles.
-      </p>
+      <p className="mb-6 text-sm text-gray-300">{translate(locale, 'chooseServer')}</p>
 
       <ul className="space-y-2">
         {candidates.map((guild) => {
@@ -43,27 +44,20 @@ export default async function GuildsPage() {
               {active ? (
                 <a
                   href={`/guilds/${guild.id}`}
-                  aria-label={`Configure ${guild.name}`}
+                  aria-label={translate(locale, 'configureServer', { name: guild.name })}
                   className="rounded py-2 text-amber-400 hover:underline"
                 >
-                  Configure →
+                  {translate(locale, 'configure')}
                 </a>
               ) : (
-                <span className="text-sm text-gray-400">
-                  Invite Doorman to this server to configure it.
-                </span>
+                <span className="text-sm text-gray-400">{translate(locale, 'inviteBot')}</span>
               )}
             </li>
           );
         })}
       </ul>
 
-      {candidates.length === 0 && (
-        <p className="text-gray-400">
-          No servers found where you have Manage Server permission. Ask a server owner for access,
-          then reload this page.
-        </p>
-      )}
+      {candidates.length === 0 && <p className="text-gray-400">{translate(locale, 'noServers')}</p>}
     </main>
   );
 }

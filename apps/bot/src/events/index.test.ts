@@ -6,6 +6,7 @@ import { cacheCreatedInvite, clearInviteCache, warmInviteCache } from '../lib/in
 import { execute as memberJoin } from './guildMemberAdd.js';
 import { commands } from '../commands/index.js';
 import { registerEvents } from './index.js';
+import { dictionaries } from '../lib/i18n.js';
 
 vi.mock('@doorman/database', () => ({ prisma: { guild: { upsert: vi.fn() } } }));
 vi.mock('../lib/inviteCache.js', () => ({
@@ -95,27 +96,68 @@ describe('guild lifecycle and event failures', () => {
     expect(warmInviteCache).not.toHaveBeenCalled();
   });
 
-  it.each([
-    { deferred: false, replied: false, response: 'reply' },
-    { deferred: true, replied: false, response: 'editReply' },
-    { deferred: false, replied: true, response: 'followUp' },
-    { deferred: true, replied: true, response: 'followUp' },
-  ])('reports command failure through $response', async ({ response, ...state }) => {
+  for (const locale of ['en', 'it', 'es', 'ru', 'zh'] as const) {
+    it.each([
+      { deferred: false, replied: false, response: 'reply' },
+      { deferred: true, replied: false, response: 'editReply' },
+      { deferred: false, replied: true, response: 'followUp' },
+      { deferred: true, replied: true, response: 'followUp' },
+    ])(`reports command failure in ${locale} through $response`, async ({ response, ...state }) => {
+      const { emit } = fixture();
+      vi.mocked(commands[0].execute).mockRejectedValueOnce(new Error('Command failed'));
+      const interaction = {
+        ...state,
+        locale,
+        guildLocale: 'en-US',
+        isChatInputCommand: () => true,
+        commandName: 'test',
+        reply: vi.fn(),
+        editReply: vi.fn(),
+        followUp: vi.fn(),
+      };
+      await emit(Events.InteractionCreate, interaction);
+      expect(interaction[response as 'reply' | 'editReply' | 'followUp']).toHaveBeenCalledWith({
+        content: dictionaries[locale].commandError,
+        ...(response === 'editReply' ? {} : { ephemeral: true }),
+      });
+      expect(console.error).toHaveBeenCalledWith('Command test failed', expect.any(Error));
+    });
+  }
+
+  it('uses the guild locale for error responses only when the interaction locale is absent', async () => {
     const { emit } = fixture();
     vi.mocked(commands[0].execute).mockRejectedValueOnce(new Error('Command failed'));
-    const interaction = {
-      ...state,
+    const reply = vi.fn();
+    await emit(Events.InteractionCreate, {
       isChatInputCommand: () => true,
       commandName: 'test',
+      guildLocale: 'zh-TW',
+      reply,
+    });
+    expect(reply).toHaveBeenCalledWith({ content: dictionaries.zh.commandError, ephemeral: true });
+  });
+
+  it('dispatches a successful command without an error response', async () => {
+    const { emit } = fixture();
+    const interaction = {
+      isChatInputCommand: () => true,
+      commandName: 'test',
+      locale: 'it',
       reply: vi.fn(),
-      editReply: vi.fn(),
-      followUp: vi.fn(),
     };
     await emit(Events.InteractionCreate, interaction);
-    expect(interaction[response as 'reply' | 'editReply' | 'followUp']).toHaveBeenCalledWith(
-      expect.objectContaining({ content: 'Something went wrong.' }),
-    );
-    expect(console.error).toHaveBeenCalledTimes(1);
+    expect(commands[0].execute).toHaveBeenCalledWith(interaction);
+    expect(interaction.reply).not.toHaveBeenCalled();
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { isChatInputCommand: () => false, commandName: 'test' },
+    { isChatInputCommand: () => true, commandName: 'unknown' },
+  ])('ignores other interactions and unknown commands', async (interaction) => {
+    const { emit } = fixture();
+    await emit(Events.InteractionCreate, interaction);
+    expect(commands[0].execute).not.toHaveBeenCalled();
   });
 
   it('catches a failed error reply and Discord client errors', async () => {

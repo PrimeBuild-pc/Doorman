@@ -3,6 +3,8 @@ import { prisma } from '@doorman/database';
 import { getSession } from '@/lib/session';
 import { assertCanManageGuild, fetchGuildChannels, fetchGuildRoles } from '@/lib/discordApi';
 import { FormButton } from '../../form-button';
+import { translate, type MessageKey } from '@doorman/shared';
+import { getLocale } from '@/lib/locale';
 import {
   addInviteMap,
   decidePending,
@@ -11,13 +13,13 @@ import {
   uploadBanner,
 } from './actions';
 
-const notices: Record<string, string> = {
-  saved: 'Settings saved.',
-  banner: 'Welcome banner uploaded.',
-  mapping: 'Invite role mapping saved.',
-  removed: 'Invite role mapping removed.',
-  approved: 'Member approved. Configured roles assigned.',
-  denied: 'Member denied. No roles assigned; the member was not kicked or banned.',
+const notices: Record<string, MessageKey> = {
+  saved: 'saved',
+  banner: 'banner',
+  mapping: 'mapping',
+  removed: 'removed',
+  approved: 'approved',
+  denied: 'denied',
 };
 
 export default async function GuildSettingsPage({
@@ -27,6 +29,9 @@ export default async function GuildSettingsPage({
   params: Promise<{ guildId: string }>;
   searchParams: Promise<{ notice?: string | string[]; error?: string | string[] }>;
 }) {
+  const locale = await getLocale();
+  const t = (key: MessageKey, values?: Record<string, string | number>) =>
+    translate(locale, key, values);
   const { guildId } = await params;
   const session = await getSession();
   if (!session) redirect('/api/auth/login');
@@ -47,10 +52,10 @@ export default async function GuildSettingsPage({
   ]);
   const { notice, error } = await searchParams;
   const status =
-    typeof notice === 'string' && Object.hasOwn(notices, notice) ? notices[notice] : null;
+    typeof notice === 'string' && Object.hasOwn(notices, notice) ? t(notices[notice]!) : null;
   const hasError = typeof error === 'string' && error.length > 0;
   const roleName = (id: string) =>
-    roles.find((r) => r.id === id)?.name ?? `Unavailable role (${id})`;
+    roles.find((r) => r.id === id)?.name ?? t('unavailableRole', { id });
   const unavailableDefaults = guildConfig.defaultRoleIds.some(
     (id) => !roles.some((r) => r.id === id),
   );
@@ -64,7 +69,7 @@ export default async function GuildSettingsPage({
       <header className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="min-w-0 break-words text-2xl font-bold">{guild.name}</h1>
         <a href="/guilds" className="rounded py-2 text-sm text-gray-300 hover:text-white">
-          ← All servers
+          ← {t('allServers')}
         </a>
       </header>
 
@@ -73,9 +78,7 @@ export default async function GuildSettingsPage({
           role="alert"
           className="rounded border border-red-400 bg-gray-900 p-4 text-sm text-red-200"
         >
-          We couldn&apos;t complete this change. Check your inputs and server permissions, then try
-          again. If you approved a member, some roles may have been assigned already; check Discord
-          before retrying.
+          {t('changeError')}
         </p>
       ) : status ? (
         <p
@@ -88,12 +91,12 @@ export default async function GuildSettingsPage({
 
       <section aria-labelledby="settings-heading">
         <h2 id="settings-heading" className="mb-3 text-lg font-semibold">
-          Autorole &amp; welcome
+          {t('settings')}
         </h2>
         <form action={updateSettings.bind(null, guildId)} className="space-y-4">
           <div>
             <label htmlFor="default-roles" className="mb-1 block text-sm text-gray-300">
-              Default role(s) assigned on join
+              {t('defaultRoles')}
             </label>
             <select
               id="default-roles"
@@ -110,19 +113,14 @@ export default async function GuildSettingsPage({
               ))}
             </select>
             <p id="default-roles-hint" className="mt-2 text-sm text-gray-400">
-              Only safe roles below Doorman&apos;s highest role are available. Default roles must
-              not grant administrator or moderation permissions, including channel overrides. Use
-              Ctrl (Windows) or Command (Mac) to select or deselect multiple roles. Leave all
-              unselected to assign none.
-              {roles.length === 0 &&
-                ' No assignable roles found. Create a non-admin member role in Discord and move Doorman above it.'}
-              {unavailableDefaults &&
-                ' Some saved roles are no longer assignable and will be removed when you save.'}
+              {t('roleHint')}
+              {roles.length === 0 && t('noRolesHint')}
+              {unavailableDefaults && t('unavailableDefaults')}
             </p>
           </div>
           <div>
             <label htmlFor="welcome-channel" className="mb-1 block text-sm text-gray-300">
-              Welcome channel
+              {t('welcomeChannel')}
             </label>
             <select
               id="welcome-channel"
@@ -130,7 +128,7 @@ export default async function GuildSettingsPage({
               defaultValue={guildConfig.welcomeChannelId ?? ''}
               className={inputClass}
             >
-              <option value="">— none —</option>
+              <option value="">{t('none')}</option>
               {channels.map((c) => (
                 <option key={c.id} value={c.id}>
                   #{c.name}
@@ -138,14 +136,12 @@ export default async function GuildSettingsPage({
               ))}
             </select>
             {channels.length === 0 && (
-              <p className="mt-2 text-sm text-gray-400">
-                No text channels found. Check Doorman&apos;s channel access in Discord.
-              </p>
+              <p className="mt-2 text-sm text-gray-400">{t('noChannels')}</p>
             )}
           </div>
           <div>
             <label htmlFor="account-age" className="mb-1 block text-sm text-gray-300">
-              Anti-raid: minimum account age in hours
+              {t('accountAge')}
             </label>
             <input
               id="account-age"
@@ -160,27 +156,25 @@ export default async function GuildSettingsPage({
               className={inputClass}
             />
             <p id="account-age-hint" className="mt-2 text-sm text-gray-400">
-              0 turns off the age check. Younger accounts wait for approval before receiving roles.
+              {t('ageHint')}
             </p>
           </div>
-          <FormButton className={buttonClass} pendingLabel="Saving…">
-            Save
+          <FormButton className={buttonClass} pendingLabel={t('saving')}>
+            {t('save')}
           </FormButton>
         </form>
       </section>
 
       <section aria-labelledby="banner-heading">
         <h2 id="banner-heading" className="mb-3 text-lg font-semibold">
-          Welcome banner
+          {t('welcomeBanner')}
         </h2>
         <p className="mb-3 text-sm text-gray-400">
-          {guildConfig.bannerPath
-            ? 'Current banner is set. Uploading replaces it.'
-            : 'No custom banner yet. Upload an image to personalize welcomes.'}
+          {guildConfig.bannerPath ? t('bannerSet') : t('noBanner')}
         </p>
         <form action={uploadBanner.bind(null, guildId)} className="space-y-3">
           <label htmlFor="banner" className="block text-sm text-gray-300">
-            Banner image
+            {t('bannerImage')}
           </label>
           <input
             id="banner"
@@ -192,18 +186,17 @@ export default async function GuildSettingsPage({
             className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-gray-700 file:px-3 file:py-2 file:text-white`}
           />
           <p id="banner-hint" className="text-sm text-gray-400">
-            PNG, JPEG or WebP, up to 5 MiB and 16 megapixels (single frame). Images are cropped to
-            1024 × 450. A new member&apos;s avatar and name appear on top when they join.
+            {t('bannerHint')}
           </p>
-          <FormButton className={buttonClass} pendingLabel="Uploading…">
-            Upload
+          <FormButton className={buttonClass} pendingLabel={t('uploading')}>
+            {t('upload')}
           </FormButton>
         </form>
       </section>
 
       <section aria-labelledby="invites-heading">
         <h2 id="invites-heading" className="mb-3 text-lg font-semibold">
-          Role by invite link
+          {t('inviteRoles')}
         </h2>
         <ul className="mb-4 space-y-2">
           {inviteMaps.map((m) => (
@@ -217,20 +210,15 @@ export default async function GuildSettingsPage({
               <form action={removeInviteMap.bind(null, guildId, m.id)}>
                 <FormButton
                   className="min-h-11 rounded px-3 py-2 text-red-300 hover:bg-gray-800"
-                  pendingLabel="Removing…"
-                  aria-label={`Remove mapping for ${m.inviteCode}`}
+                  pendingLabel={t('removing')}
+                  aria-label={t('removeMapping', { code: m.inviteCode })}
                 >
-                  Remove
+                  {t('remove')}
                 </FormButton>
               </form>
             </li>
           ))}
-          {inviteMaps.length === 0 && (
-            <li className="text-sm text-gray-400">
-              No mappings yet. Choose an invite code and a safe role to assign to members using that
-              link.
-            </li>
-          )}
+          {inviteMaps.length === 0 && <li className="text-sm text-gray-400">{t('noMappings')}</li>}
         </ul>
         <form
           action={addInviteMap.bind(null, guildId)}
@@ -238,12 +226,12 @@ export default async function GuildSettingsPage({
         >
           <div>
             <label htmlFor="invite-code" className="mb-1 block text-sm text-gray-300">
-              Invite code
+              {t('inviteCode')}
             </label>
             <input
               id="invite-code"
               name="inviteCode"
-              placeholder="e.g. abc123"
+              placeholder={t('inviteExample')}
               required
               aria-describedby="invite-hint"
               className={inputClass}
@@ -251,11 +239,11 @@ export default async function GuildSettingsPage({
           </div>
           <div>
             <label htmlFor="invite-role" className="mb-1 block text-sm text-gray-300">
-              Role
+              {t('role')}
             </label>
             <select id="invite-role" name="roleId" required defaultValue="" className={inputClass}>
               <option value="" disabled>
-                {roles.length ? 'Choose a role' : 'No assignable roles'}
+                {roles.length ? t('chooseRole') : t('noRoles')}
               </option>
               {roles.map((r) => (
                 <option key={r.id} value={r.id}>
@@ -264,33 +252,26 @@ export default async function GuildSettingsPage({
               ))}
             </select>
           </div>
-          <FormButton className={buttonClass} disabled={roles.length === 0} pendingLabel="Adding…">
-            Add
+          <FormButton
+            className={buttonClass}
+            disabled={roles.length === 0}
+            pendingLabel={t('adding')}
+          >
+            {t('add')}
           </FormButton>
         </form>
         <p id="invite-hint" className="mt-2 text-sm text-gray-400">
-          Use only the code after discord.gg/, not the full URL. Adding an existing code replaces
-          its role.
+          {t('inviteHint')}
         </p>
       </section>
 
       <section aria-labelledby="pending-heading">
         <h2 id="pending-heading" className="mb-3 text-lg font-semibold">
-          Pending approvals ({pending.length} shown)
+          {t('pending', { count: pending.length })}
         </h2>
-        <p className="mb-3 text-sm text-gray-400">
-          Approve assigns the configured default roles. Deny only withholds roles; it does not kick
-          or ban the member.
-        </p>
-        <p className="mb-3 text-sm text-gray-400">
-          Showing up to 100 pending members, newest first. Review this queue, then reload to see
-          remaining members.
-        </p>
-        {pending.length === 0 && (
-          <p className="text-sm text-gray-400">
-            Nobody waiting. Accounts held by the age check will appear here.
-          </p>
-        )}
+        <p className="mb-3 text-sm text-gray-400">{t('approvalHint')}</p>
+        <p className="mb-3 text-sm text-gray-400">{t('queueHint')}</p>
+        {pending.length === 0 && <p className="text-sm text-gray-400">{t('noPending')}</p>}
         <ul className="space-y-2">
           {pending.map((p) => (
             <li
@@ -298,28 +279,28 @@ export default async function GuildSettingsPage({
               className="flex flex-wrap items-center justify-between gap-3 rounded border border-gray-800 p-3 text-sm"
             >
               <span className="min-w-0 break-words">
-                {p.username} — account created{' '}
+                {p.username} — {t('accountCreated')}{' '}
                 <time dateTime={p.accountCreatedAt.toISOString()}>
-                  {p.accountCreatedAt.toLocaleDateString('en-US', { timeZone: 'UTC' })}
+                  {p.accountCreatedAt.toLocaleDateString(locale, { timeZone: 'UTC' })}
                 </time>
               </span>
               <div className="flex flex-wrap gap-2">
                 <form action={decidePending.bind(null, guildId, p.id, 'approved')}>
                   <FormButton
                     className="min-h-11 rounded px-3 py-2 text-green-300 hover:bg-gray-800"
-                    pendingLabel="Approving…"
-                    aria-label={`Approve ${p.username}`}
+                    pendingLabel={t('approving')}
+                    aria-label={t('approveMember', { name: p.username })}
                   >
-                    Approve
+                    {t('approve')}
                   </FormButton>
                 </form>
                 <form action={decidePending.bind(null, guildId, p.id, 'denied')}>
                   <FormButton
                     className="min-h-11 rounded px-3 py-2 text-red-300 hover:bg-gray-800"
-                    pendingLabel="Denying…"
-                    aria-label={`Deny roles for ${p.username}`}
+                    pendingLabel={t('denying')}
+                    aria-label={t('denyMember', { name: p.username })}
                   >
-                    Deny
+                    {t('deny')}
                   </FormButton>
                 </form>
               </div>

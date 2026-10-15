@@ -5,20 +5,23 @@ import {
 } from 'discord.js';
 import { prisma } from '@doorman/database';
 import { requireGuildManager } from './authorization.js';
+import { descriptionLocalizations, interactionLocale, t } from '../lib/i18n.js';
 
 export const data = new SlashCommandBuilder()
   .setName('doorman-status')
-  .setDescription("Show Doorman's current configuration for this server.")
+  .setDescription(t('en', 'statusDescription'))
+  .setDescriptionLocalizations(descriptionLocalizations('statusDescription'))
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
   .setDMPermission(false);
 
 export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
   if (!(await requireGuildManager(interaction)) || !interaction.guildId) return;
 
+  const locale = interactionLocale(interaction);
   const guildConfig = await prisma.guild.findUnique({ where: { id: interaction.guildId } });
   if (!guildConfig) {
     await interaction.reply({
-      content: 'Not configured yet — open the dashboard first.',
+      content: t(locale, 'notConfigured'),
       ephemeral: true,
     });
     return;
@@ -26,24 +29,24 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
   const roles = guildConfig.defaultRoleIds.length
     ? guildConfig.defaultRoleIds.map((id) => `<@&${id}>`).join(', ')
-    : '— none —';
+    : t(locale, 'none');
   const welcomeChannel = guildConfig.welcomeChannelId
     ? `<#${guildConfig.welcomeChannelId}>`
-    : '— none —';
+    : t(locale, 'none');
   const antiRaid =
     guildConfig.minAccountAgeHours > 0
-      ? `${guildConfig.minAccountAgeHours}h minimum account age`
-      : 'off';
-  const banner = guildConfig.bannerPath ? 'set' : 'not set';
+      ? t(locale, 'accountAge', { hours: guildConfig.minAccountAgeHours })
+      : t(locale, 'off');
+  const banner = t(locale, guildConfig.bannerPath ? 'bannerSet' : 'bannerNotSet');
 
   await interaction.reply({
     ephemeral: true,
     content: [
-      '**Doorman configuration**',
-      `Default role(s): ${roles}`,
-      `Welcome channel: ${welcomeChannel}`,
-      `Welcome banner: ${banner}`,
-      `Anti-raid guard: ${antiRaid}`,
+      t(locale, 'configuration'),
+      t(locale, 'defaultRoles', { roles }),
+      t(locale, 'welcomeChannel', { channel: welcomeChannel }),
+      t(locale, 'welcomeBanner', { banner }),
+      t(locale, 'antiRaid', { guard: antiRaid }),
     ].join('\n'),
   });
 }

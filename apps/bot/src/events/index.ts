@@ -3,6 +3,7 @@ import { prisma } from '@doorman/database';
 import { cacheCreatedInvite, clearInviteCache, warmInviteCache } from '../lib/inviteCache.js';
 import * as guildMemberAdd from './guildMemberAdd.js';
 import { commands } from '../commands/index.js';
+import { interactionLocale, t } from '../lib/i18n.js';
 
 async function ensureGuildRow(guild: Guild): Promise<void> {
   if (!guild.available) return;
@@ -48,12 +49,13 @@ export function registerEvents(client: Client, registerCommands: () => Promise<v
     } catch (err) {
       console.error(`Command ${interaction.commandName} failed`, err);
       try {
+        const content = t(interactionLocale(interaction), 'commandError');
         if (interaction.deferred && !interaction.replied) {
-          await interaction.editReply({ content: 'Something went wrong.' });
+          await interaction.editReply({ content });
         } else if (interaction.replied) {
-          await interaction.followUp({ content: 'Something went wrong.', ephemeral: true });
+          await interaction.followUp({ content, ephemeral: true });
         } else {
-          await interaction.reply({ content: 'Something went wrong.', ephemeral: true });
+          await interaction.reply({ content, ephemeral: true });
         }
       } catch (replyError) {
         console.error('Could not report command failure', replyError);
