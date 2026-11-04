@@ -15,7 +15,7 @@ In the [Discord Developer Portal](https://discord.com/developers/applications):
 ### Minimum permissions
 
 - **Manage Roles** to assign roles. The Doorman role must be **above the roles to assign**, not above administrators/moderators. Exclude integration-managed roles and `@everyone`.
-- Only in the welcome channel: **View Channel, Send Messages, Attach Files**. If you do not use cards, these permissions are not needed for that feature.
+- Only in the welcome channel: **View Channel, Send Messages, Attach Files, Embed Links**. If you do not use cards, these permissions are not needed for that feature.
 - **Manage Server / Manage Guild** only if you use invite-based roles: it is needed to read all invites and their counters. Without it, basic autorole still works, but invite attribution does not.
 - **Administrator, Ban Members, Kick Members, Manage Channels, Message Content** are not needed. Denying approval does not remove the member: it does not grant them roles.
 
@@ -61,7 +61,7 @@ You can invite the same app to multiple servers: every setting and mutation rema
 
 Roles with administrative/moderation privileges, including through channel/category overrides, are excluded and revalidated before being granted. This does not replace a Discord permission review: a role may grant access to private channels or other bots' features. Use only low-privilege entry roles.
 
-Banners accept single PNG/JPEG/WebP images up to 5 MiB and 16 megapixels; they are decoded and resampled to 1024×450 PNG. Replacements normally remove the previous file; concurrent uploads/interruptions may leave unused files, to be cleaned up only after backup and comparison with the DB.
+Banners accept single PNG/JPEG/WebP images up to 5 MiB and 16 megapixels; they are decoded and resampled to 1024×360 PNG. Replacements normally remove the previous file; concurrent uploads/interruptions may leave unused files, to be cleaned up only after backup and comparison with the DB.
 
 A rejoin supersedes previous pending requests; approval checks the current join timestamp on Discord. Old requests created before this version may be rejected because they used a local timestamp: privately verify the member and roles in Discord and deny/archive the obsolete request. Denying does not remove existing roles, kick or ban.
 

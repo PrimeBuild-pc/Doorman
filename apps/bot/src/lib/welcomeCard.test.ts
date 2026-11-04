@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadImage } from '@napi-rs/canvas';
-import { renderWelcomeCard } from './welcomeCard.js';
+import { ordinal, renderWelcomeCard } from './welcomeCard.js';
 
 const { ctx, encode } = vi.hoisted(() => ({
   ctx: {
@@ -15,6 +15,10 @@ const { ctx, encode } = vi.hoisted(() => ({
     restore: vi.fn(),
     stroke: vi.fn(),
     fillText: vi.fn(),
+    createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    strokeRect: vi.fn(),
   },
   encode: vi.fn(),
 }));
@@ -45,6 +49,34 @@ afterEach(() => {
 
 // No real HTTP calls or native canvas rendering are needed for these contracts.
 describe('welcome card', () => {
+  it('draws the built-in PrimeBuild background and guild name when no banner is uploaded', async () => {
+    await renderWelcomeCard(
+      null,
+      'https://cdn.discordapp.com/avatar.png',
+      'Member',
+      'PrimeBuild',
+      169,
+    );
+    // Only the avatar is decoded; no banner file is read.
+    expect(loadImage).toHaveBeenCalledTimes(1);
+    expect(ctx.createRadialGradient).toHaveBeenCalled();
+    expect(ctx.fillText).toHaveBeenCalledWith('PrimeBuild  ·  169th member', 312, 250, 656);
+  });
+
+  it.each([
+    [1, '1st'],
+    [2, '2nd'],
+    [3, '3rd'],
+    [11, '11th'],
+    [12, '12th'],
+    [13, '13th'],
+    [21, '21st'],
+    [112, '112th'],
+    [169, '169th'],
+  ])('formats %i as %s', (n, expected) => {
+    expect(ordinal(n)).toBe(expected);
+  });
+
   it('fetches the avatar with a timeout and bounds a long username to the remaining width', async () => {
     const timeout = vi.spyOn(AbortSignal, 'timeout');
     const username = 'Long username '.repeat(20);
@@ -55,34 +87,10 @@ describe('welcome card', () => {
     expect(fetch).toHaveBeenCalledWith('https://cdn.discordapp.com/avatar.png', {
       signal: expect.any(AbortSignal),
     });
-    expect(ctx.fillText).toHaveBeenCalledWith(username, 230, 320, 754);
-    expect(ctx.fillText).toHaveBeenCalledWith('welcome to the server', 230, 364, 754);
+    expect(ctx.fillText).toHaveBeenCalledWith(username, 312, 202, 656);
+    expect(ctx.fillText).toHaveBeenCalledWith('WELCOME TO THE SERVER', 312, 132, 656);
     expect(encode).toHaveBeenCalledWith('png');
   });
-
-  it.each([
-    { locale: 'en-US', text: 'welcome to the server' },
-    { locale: 'it', text: 'benvenuto nel server' },
-    { locale: 'es-ES', text: 'bienvenido al servidor' },
-    { locale: 'ru', text: 'добро пожаловать на сервер' },
-    { locale: 'zh-CN', text: '欢迎加入服务器' },
-    { locale: 'zh-TW', text: '欢迎加入服务器' },
-    { locale: 'invalid', text: 'welcome to the server' },
-    { locale: null, text: 'welcome to the server' },
-  ])(
-    'renders a bounded translated subtitle for $locale without changing the username',
-    async ({ locale, text }) => {
-      const username = 'Member {mention} 中文';
-      await renderWelcomeCard(
-        'banner.png',
-        'https://cdn.discordapp.com/avatar.png',
-        username,
-        locale,
-      );
-      expect(ctx.fillText).toHaveBeenCalledWith(username, 230, 320, 754);
-      expect(ctx.fillText).toHaveBeenCalledWith(text, 230, 364, 754);
-    },
-  );
 
   it('rejects HTTP errors before reading or decoding the avatar body', async () => {
     const arrayBuffer = vi.fn();

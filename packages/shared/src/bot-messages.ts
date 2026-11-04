@@ -19,8 +19,6 @@ const en = {
   pendingMember: '• **{username}** — account created {timestamp}',
   pendingHeading: '**Pending approvals** (approve/deny from the dashboard)',
   commandError: 'Something went wrong.',
-  welcomeMessage: 'Welcome {mention}!',
-  welcomeCard: 'welcome to the server',
 } as const;
 
 type BotMessageKey = keyof typeof en;
@@ -47,8 +45,6 @@ export const botMessages = {
     pendingMember: '• **{username}** — account creato {timestamp}',
     pendingHeading: '**Approvazioni in sospeso** (approva/rifiuta dalla dashboard)',
     commandError: 'Si è verificato un errore.',
-    welcomeMessage: 'Benvenuto {mention}!',
-    welcomeCard: 'benvenuto nel server',
   },
   es: {
     statusDescription: 'Muestra la configuración actual de Doorman para este servidor.',
@@ -70,8 +66,6 @@ export const botMessages = {
     pendingMember: '• **{username}** — cuenta creada {timestamp}',
     pendingHeading: '**Aprobaciones pendientes** (aprueba/rechaza desde el panel)',
     commandError: 'Se ha producido un error.',
-    welcomeMessage: '¡Bienvenido {mention}!',
-    welcomeCard: 'bienvenido al servidor',
   },
   ru: {
     statusDescription: 'Показать текущие настройки Doorman для этого сервера.',
@@ -92,8 +86,6 @@ export const botMessages = {
     pendingMember: '• **{username}** — аккаунт создан {timestamp}',
     pendingHeading: '**Ожидают одобрения** (одобрить/отклонить в панели управления)',
     commandError: 'Произошла ошибка.',
-    welcomeMessage: 'Добро пожаловать, {mention}!',
-    welcomeCard: 'добро пожаловать на сервер',
   },
   zh: {
     statusDescription: '显示此服务器的 Doorman 当前配置。',
@@ -114,7 +106,5 @@ export const botMessages = {
     pendingMember: '• **{username}** — 账号创建于 {timestamp}',
     pendingHeading: '**待批准成员**（在控制面板中批准或拒绝）',
     commandError: '发生了错误。',
-    welcomeMessage: '欢迎 {mention}！',
-    welcomeCard: '欢迎加入服务器',
   },
 } satisfies Record<Locale, Record<BotMessageKey, string>>;

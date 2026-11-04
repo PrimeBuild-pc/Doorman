@@ -51,7 +51,7 @@ export const english = {
   noBanner: 'No custom banner yet. Upload an image to personalize welcomes.',
   bannerImage: 'Banner image',
   bannerHint:
-    "PNG, JPEG or WebP, up to 5 MiB and 16 megapixels (single frame). Images are cropped to 1024 × 450. A new member's avatar and name appear on top when they join.",
+    "PNG, JPEG or WebP, up to 5 MiB and 16 megapixels (single frame). Images are cropped to 1024 × 360. A new member's avatar and name appear on top when they join.",
   uploading: 'Uploading…',
   upload: 'Upload',
   inviteRoles: 'Role by invite link',
@@ -145,7 +145,7 @@ export const messages = {
     noBanner: 'Nessun banner personalizzato. Carica un’immagine per personalizzare il benvenuto.',
     bannerImage: 'Immagine del banner',
     bannerHint:
-      'PNG, JPEG o WebP, fino a 5 MiB e 16 megapixel (un solo fotogramma). Le immagini vengono ritagliate a 1024 × 450. L’avatar e il nome del nuovo membro appaiono sopra l’immagine al suo ingresso.',
+      'PNG, JPEG o WebP, fino a 5 MiB e 16 megapixel (un solo fotogramma). Le immagini vengono ritagliate a 1024 × 360. L’avatar e il nome del nuovo membro appaiono sopra l’immagine al suo ingresso.',
     uploading: 'Caricamento…',
     upload: 'Carica',
     inviteRoles: 'Ruolo tramite link d’invito',
@@ -236,7 +236,7 @@ export const messages = {
       'Aún no hay un banner personalizado. Sube una imagen para personalizar las bienvenidas.',
     bannerImage: 'Imagen del banner',
     bannerHint:
-      'PNG, JPEG o WebP, hasta 5 MiB y 16 megapíxeles (un solo fotograma). Las imágenes se recortan a 1024 × 450. El avatar y el nombre del nuevo miembro se superponen cuando entra.',
+      'PNG, JPEG o WebP, hasta 5 MiB y 16 megapíxeles (un solo fotograma). Las imágenes se recortan a 1024 × 360. El avatar y el nombre del nuevo miembro se superponen cuando entra.',
     uploading: 'Subiendo…',
     upload: 'Subir',
     inviteRoles: 'Rol por enlace de invitación',
@@ -324,7 +324,7 @@ export const messages = {
     noBanner: 'Своего баннера пока нет. Загрузите изображение для персонализации приветствий.',
     bannerImage: 'Изображение баннера',
     bannerHint:
-      'PNG, JPEG или WebP, до 5 МиБ и 16 мегапикселей (один кадр). Изображения обрезаются до 1024 × 450. Аватар и имя нового участника отображаются поверх при его входе.',
+      'PNG, JPEG или WebP, до 5 МиБ и 16 мегапикселей (один кадр). Изображения обрезаются до 1024 × 360. Аватар и имя нового участника отображаются поверх при его входе.',
     uploading: 'Загрузка…',
     upload: 'Загрузить',
     inviteRoles: 'Роль по ссылке-приглашению',
@@ -408,7 +408,7 @@ export const messages = {
     noBanner: '尚无自定义横幅。上传图片以自定义欢迎效果。',
     bannerImage: '横幅图片',
     bannerHint:
-      '支持 PNG、JPEG 或 WebP，最大 5 MiB、1600 万像素（单帧）。图片会裁剪为 1024 × 450。新成员加入时，其头像和名字将显示在图片上。',
+      '支持 PNG、JPEG 或 WebP，最大 5 MiB、1600 万像素（单帧）。图片会裁剪为 1024 × 360。新成员加入时，其头像和名字将显示在图片上。',
     uploading: '正在上传…',
     upload: '上传',
     inviteRoles: '按邀请链接分配身份组',

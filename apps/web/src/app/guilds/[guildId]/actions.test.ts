@@ -241,7 +241,7 @@ describe('banner upload trust boundary', () => {
     expect(filename).toMatch(/^100-[a-f\d-]{36}\.png$/);
     expect(await sharp(path.join(mocks.uploads, filename!)).metadata()).toMatchObject({
       width: 1024,
-      height: 450,
+      height: 360,
       format: 'png',
     });
     expect(mocks.updateGuild).toHaveBeenCalledWith({

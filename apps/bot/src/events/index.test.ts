@@ -5,7 +5,7 @@ import { prisma } from '@doorman/database';
 import { cacheCreatedInvite, clearInviteCache, warmInviteCache } from '../lib/inviteCache.js';
 import { execute as memberJoin } from './guildMemberAdd.js';
 import { commands } from '../commands/index.js';
-import { registerEvents } from './index.js';
+import { checkWelcomeChannel, registerEvents } from './index.js';
 import { dictionaries } from '../lib/i18n.js';
 
 vi.mock('@doorman/database', () => ({ prisma: { guild: { upsert: vi.fn() } } }));
@@ -170,5 +170,35 @@ describe('guild lifecycle and event failures', () => {
     });
     await emit(Events.Error, new Error('Client failed'));
     expect(console.error).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('welcome channel check', () => {
+  const guildWith = (granted: bigint[], channel: unknown = {}) =>
+    ({
+      id: 'g',
+      channels: { fetch: vi.fn().mockResolvedValue(channel) },
+      members: {
+        fetchMe: vi.fn().mockResolvedValue({
+          permissionsIn: () => ({ has: (bit: bigint) => granted.includes(bit) }),
+        }),
+      },
+    }) as never;
+
+  it('warns with the exact missing permissions', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { PermissionFlagsBits: P } = await import('discord.js');
+    await checkWelcomeChannel(guildWith([P.ViewChannel, P.SendMessages]), 'c');
+    expect(warn).toHaveBeenCalledWith(
+      'Welcome channel c in guild g: missing AttachFiles, EmbedLinks',
+    );
+  });
+
+  it('reports a deleted channel and skips unconfigured guilds', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await checkWelcomeChannel(guildWith([], null), 'c');
+    expect(warn).toHaveBeenCalledWith('Welcome channel c in guild g: missing channel not found');
+    await checkWelcomeChannel(guildWith([]), null);
+    expect(warn).toHaveBeenCalledTimes(1);
   });
 });
