@@ -1,10 +1,10 @@
 import path from 'node:path';
-import { Events, PermissionFlagsBits, type GuildMember } from 'discord.js';
+import { EmbedBuilder, Events, PermissionFlagsBits, type GuildMember } from 'discord.js';
 import { prisma } from '@doorman/database';
-import { accountAgeHours, getEnv, isSafeAutoRole, resolveLocale } from '@doorman/shared';
+import { accountAgeHours, getEnv, isSafeAutoRole } from '@doorman/shared';
 import { resolveUsedInviteCode } from '../lib/inviteCache.js';
 import { renderWelcomeCard } from '../lib/welcomeCard.js';
-import { t } from '../lib/i18n.js';
+import { pickWelcomePhrase } from '../lib/welcomePhrases.js';
 
 export const name = Events.GuildMemberAdd;
 
@@ -93,30 +93,40 @@ export async function execute(member: GuildMember): Promise<void> {
   }
 
   let welcomeSent = false;
-  if (guildConfig.welcomeChannelId && guildConfig.bannerPath) {
+  if (guildConfig.welcomeChannelId) {
     try {
       const channel = await member.guild.channels.fetch(guildConfig.welcomeChannelId);
       if (channel?.isTextBased() && channel.guildId === member.guild.id) {
         const bannerPath = guildConfig.bannerPath;
         if (
-          bannerPath === '.' ||
-          bannerPath === '..' ||
-          path.posix.basename(bannerPath) !== bannerPath ||
-          path.win32.basename(bannerPath) !== bannerPath
+          bannerPath &&
+          (bannerPath === '.' ||
+            bannerPath === '..' ||
+            path.posix.basename(bannerPath) !== bannerPath ||
+            path.win32.basename(bannerPath) !== bannerPath)
         ) {
           throw new Error('Banner path must be a filename within UPLOADS_DIR');
         }
-        const locale = resolveLocale(member.guild.preferredLocale);
-        const bannerFile = path.join(getEnv().UPLOADS_DIR, bannerPath);
+        // No uploaded banner: the card falls back to the built-in PrimeBuild background.
+        const bannerFile = bannerPath ? path.join(getEnv().UPLOADS_DIR, bannerPath) : null;
         const card = await renderWelcomeCard(
           bannerFile,
           member.user.displayAvatarURL({ extension: 'png', size: 256 }),
-          member.user.username,
-          locale,
+          member.displayName,
+          member.guild.name,
+          member.guild.memberCount,
         );
+        const mention = `<@${member.id}>`;
         await channel.send({
-          content: t(locale, 'welcomeMessage', { mention: `<@${member.id}>` }),
+          content: mention,
+          embeds: [
+            new EmbedBuilder()
+              .setColor(0xff6600)
+              .setDescription(pickWelcomePhrase(mention, member.guild.name))
+              .setImage('attachment://welcome.png'),
+          ],
           files: [{ attachment: card, name: 'welcome.png' }],
+          allowedMentions: { users: [member.id] },
         });
         welcomeSent = true;
       }

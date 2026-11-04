@@ -204,7 +204,7 @@ it.each(['png', 'jpeg', 'webp'] as const)(
       'Synthetic member',
     );
     const metadata = await sharp(result).metadata();
-    expect([metadata.format, metadata.width, metadata.height]).toEqual(['png', 1024, 450]);
+    expect([metadata.format, metadata.width, metadata.height]).toEqual(['png', 1024, 360]);
     form.set('banner', new File(['not an image'], 'bad.png', { type: 'image/png' }));
     await expect(uploadBanner(guildId, form)).rejects.toThrow('error=change');
     expect((await prisma.guild.findUniqueOrThrow({ where: { id: guildId } })).bannerPath).toBe(

@@ -83,7 +83,7 @@ export async function uploadBanner(guildId: string, formData: FormData): Promise
     const metadata = await image.metadata();
     if (!['png', 'jpeg', 'webp'].includes(metadata.format ?? '') || (metadata.pages ?? 1) !== 1)
       throw new Error('Invalid image');
-    const bytes = await image.rotate().resize(1024, 450, { fit: 'cover' }).png().toBuffer();
+    const bytes = await image.rotate().resize(1024, 360, { fit: 'cover' }).png().toBuffer();
     const env = getEnv();
     const previous = await prisma.guild.findUniqueOrThrow({
       where: { id: guildId },

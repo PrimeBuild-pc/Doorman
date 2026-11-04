@@ -1,18 +1,44 @@
-import { Events, type Client, type Guild } from 'discord.js';
+import { Events, PermissionFlagsBits, type Client, type Guild } from 'discord.js';
 import { prisma } from '@doorman/database';
 import { cacheCreatedInvite, clearInviteCache, warmInviteCache } from '../lib/inviteCache.js';
 import * as guildMemberAdd from './guildMemberAdd.js';
 import { commands } from '../commands/index.js';
 import { interactionLocale, t } from '../lib/i18n.js';
 
+const WELCOME_PERMISSIONS = {
+  ViewChannel: PermissionFlagsBits.ViewChannel,
+  SendMessages: PermissionFlagsBits.SendMessages,
+  AttachFiles: PermissionFlagsBits.AttachFiles,
+  EmbedLinks: PermissionFlagsBits.EmbedLinks,
+};
+
+/** Logs which permissions the bot lacks in the configured welcome channel, if any. */
+export async function checkWelcomeChannel(guild: Guild, channelId: string | null): Promise<void> {
+  if (!channelId) return;
+  const channel = await guild.channels.fetch(channelId).catch(() => null);
+  const me = await guild.members.fetchMe();
+  const perms = channel ? me.permissionsIn(channel) : null;
+  const missing = perms
+    ? Object.entries(WELCOME_PERMISSIONS).flatMap(([name, bit]) => (perms.has(bit) ? [] : [name]))
+    : ['channel not found'];
+  if (missing.length > 0) {
+    console.warn(
+      `Welcome channel ${channelId} in guild ${guild.id}: missing ${missing.join(', ')}`,
+    );
+  } else {
+    console.log(`Welcome channel ${channelId} in guild ${guild.id}: ok`);
+  }
+}
+
 async function ensureGuildRow(guild: Guild): Promise<void> {
   if (!guild.available) return;
-  await prisma.guild.upsert({
+  const row = await prisma.guild.upsert({
     where: { id: guild.id },
     update: { name: guild.name },
     create: { id: guild.id, name: guild.name },
   });
   await warmInviteCache(guild);
+  await checkWelcomeChannel(guild, row?.welcomeChannelId ?? null);
 }
 
 export function registerEvents(client: Client, registerCommands: () => Promise<void>): void {
