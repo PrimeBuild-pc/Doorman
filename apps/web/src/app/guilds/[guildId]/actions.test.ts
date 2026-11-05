@@ -112,6 +112,7 @@ describe('guild scoped mutations', () => {
           welcomeMessage: '  Ciao {user}!  ',
           goodbyeMessage: '   ',
           goodbyeChannelId: '400',
+          welcomeChannelId: '400',
           goodbyeEnabled: 'on',
         }),
       ),
@@ -119,6 +120,7 @@ describe('guild scoped mutations', () => {
     expect(mocks.updateGuild).toHaveBeenCalledWith({
       where: { id: '100' },
       data: {
+        welcomeChannelId: '400',
         cardTheme: 'ember',
         messageLocale: 'it',
         welcomeMessage: 'Ciao {user}!',
@@ -135,6 +137,7 @@ describe('guild scoped mutations', () => {
       { ...valid, messageLocale: 'fr' },
       { ...valid, welcomeMessage: 'x'.repeat(1501) },
       { ...valid, goodbyeChannelId: 'foreign' },
+      { ...valid, welcomeChannelId: 'foreign' },
     ]) {
       await expect(updateMessages('100', form(values))).rejects.toThrow(failure);
     }
@@ -157,20 +160,14 @@ describe('guild scoped mutations', () => {
   });
   it('validates all submitted roles/channels and deduplicates accepted roles', async () => {
     await expect(
-      updateSettings(
-        '100',
-        form({ defaultRoleIds: ['300', '300'], welcomeChannelId: '400', minAccountAgeHours: '24' }),
-      ),
+      updateSettings('100', form({ defaultRoleIds: ['300', '300'], minAccountAgeHours: '24' })),
     ).rejects.toThrow(success('saved'));
     expect(mocks.updateGuild).toHaveBeenCalledWith({
       where: { id: '100' },
-      data: { defaultRoleIds: ['300'], welcomeChannelId: '400', minAccountAgeHours: 24 },
+      data: { defaultRoleIds: ['300'], minAccountAgeHours: 24 },
     });
     mocks.updateGuild.mockClear();
-    for (const values of [{ defaultRoleIds: 'foreign' }, { welcomeChannelId: 'foreign' }] as Record<
-      string,
-      string
-    >[]) {
+    for (const values of [{ defaultRoleIds: 'foreign' }] as Record<string, string>[]) {
       await expect(
         updateSettings('100', form({ minAccountAgeHours: '0', ...values })),
       ).rejects.toThrow(failure);
