@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   assertCanManageGuild: vi.fn(),
   fetchGuildRoles: vi.fn(),
   fetchGuildChannels: vi.fn(),
+  fetchChannelGroups: vi.fn(),
+  botFetch: vi.fn(),
   findGuild: vi.fn(),
   findGuilds: vi.fn(),
   findMaps: vi.fn(),
@@ -24,6 +26,12 @@ vi.mock('@/lib/discordApi', () => ({
   assertCanManageGuild: mocks.assertCanManageGuild,
   fetchGuildRoles: mocks.fetchGuildRoles,
   fetchGuildChannels: mocks.fetchGuildChannels,
+  fetchChannelGroups: mocks.fetchChannelGroups,
+  botFetch: mocks.botFetch,
+}));
+vi.mock('@doorman/shared', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@doorman/shared')>()),
+  getEnv: () => ({ DISCORD_CLIENT_ID: '111111111111111111' }),
 }));
 vi.mock('@doorman/database', () => ({
   prisma: {
@@ -55,7 +63,7 @@ import NotFound from './not-found';
 import { LocaleProvider } from './locale-provider';
 import { locales, translate, type Locale } from '@doorman/shared';
 
-const session = { accessToken: 'test-token' };
+const session = { accessToken: 'test-token', user: { id: '9', username: 'tester', avatar: null } };
 const guild = { id: '123', name: 'Test server' };
 
 beforeEach(() => {
@@ -68,6 +76,12 @@ beforeEach(() => {
   mocks.findGuilds.mockResolvedValue([guild]);
   mocks.fetchGuildRoles.mockResolvedValue([]);
   mocks.fetchGuildChannels.mockResolvedValue([]);
+  mocks.fetchChannelGroups.mockResolvedValue([]);
+  mocks.botFetch.mockImplementation(async (path: string) =>
+    path === '/users/@me'
+      ? { id: '1', username: 'Doorman', avatar: null }
+      : { approximate_member_count: 41 },
+  );
   mocks.findMaps.mockResolvedValue([]);
   mocks.findPending.mockResolvedValue([]);
   mocks.formStatus.mockReturnValue({ pending: false });
@@ -149,8 +163,10 @@ describe('dashboard UI', () => {
   it('labels each control and caps the pending queue with useful empty hints', async () => {
     const html = await settingsHtml();
     for (const id of [
-      'default-roles',
       'welcome-channel',
+      'message-locale',
+      'welcome-message',
+      'goodbye-channel',
       'account-age',
       'banner',
       'invite-code',
@@ -168,6 +184,34 @@ describe('dashboard UI', () => {
     expect(html).toContain('Showing up to 100');
     expect(html).toContain('does not kick or ban');
     expect(html).toContain('moderation permissions');
+  });
+
+  it('offers roles as coloured checkboxes and channels grouped by category', async () => {
+    mocks.fetchGuildRoles.mockResolvedValue([
+      { id: '300', name: 'Member', color: 0xff6600 },
+      { id: '301', name: 'Guest', color: 0 },
+    ]);
+    mocks.findGuild.mockResolvedValue({
+      defaultRoleIds: ['300'],
+      minAccountAgeHours: 0,
+      welcomeChannelId: '401',
+      cardTheme: 'ember',
+      messageLocale: 'it',
+      showMemberCount: true,
+    });
+    mocks.fetchChannelGroups.mockResolvedValue([
+      { category: null, channels: [{ id: '400', name: 'lobby' }] },
+      { category: 'INFO', channels: [{ id: '401', name: 'welcome' }] },
+    ]);
+    const html = await settingsHtml();
+    expect(html).toMatch(/<legend[^>]*>Default role\(s\) assigned on join<\/legend>/);
+    expect(html).toMatch(/name="defaultRoleIds" checked="" value="300"/);
+    expect(html).toMatch(/name="defaultRoleIds" value="301"/);
+    expect(html).toContain('background:#ff6600');
+    expect(html).toMatch(/<optgroup label="INFO"><option value="401" selected="">/);
+    // Preview follows the saved theme and message language.
+    expect(html).toContain('BENVENUTO NEL SERVER');
+    expect(html).toContain('42° membro');
   });
 
   it('gives repeated member and mapping buttons distinct accessible names', async () => {

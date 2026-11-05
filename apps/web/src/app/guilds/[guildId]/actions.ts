@@ -42,7 +42,6 @@ async function mutateGuild(
 export async function updateSettings(guildId: string, formData: FormData): Promise<void> {
   await mutateGuild(guildId, 'saved', async () => {
     const defaultRoleIds = [...new Set(formData.getAll('defaultRoleIds').map(String))];
-    const welcomeChannelId = String(formData.get('welcomeChannelId') || '') || null;
     const age = String(formData.get('minAccountAgeHours') ?? '');
     const minAccountAgeHours = Number(age);
     if (
@@ -53,18 +52,12 @@ export async function updateSettings(guildId: string, formData: FormData): Promi
     ) {
       throw new Error('Invalid settings');
     }
-    const [roles, channels] = await Promise.all([
-      fetchGuildRoles(guildId),
-      fetchGuildChannels(guildId),
-    ]);
-    if (
-      defaultRoleIds.some((id) => !roles.some((r) => r.id === id)) ||
-      (welcomeChannelId && !channels.some((c) => c.id === welcomeChannelId))
-    )
-      throw new Error('Invalid role or channel');
+    const roles = await fetchGuildRoles(guildId);
+    if (defaultRoleIds.some((id) => !roles.some((r) => r.id === id)))
+      throw new Error('Invalid role');
     await prisma.guild.update({
       where: { id: guildId },
-      data: { defaultRoleIds, welcomeChannelId, minAccountAgeHours },
+      data: { defaultRoleIds, minAccountAgeHours },
     });
   });
 }
@@ -77,6 +70,7 @@ export async function updateMessages(guildId: string, formData: FormData): Promi
     const welcomeMessage = text('welcomeMessage') || null;
     const goodbyeMessage = text('goodbyeMessage') || null;
     const goodbyeChannelId = text('goodbyeChannelId') || null;
+    const welcomeChannelId = text('welcomeChannelId') || null;
     if (
       !isCardTheme(cardTheme) ||
       !isLocale(messageLocale) ||
@@ -85,13 +79,16 @@ export async function updateMessages(guildId: string, formData: FormData): Promi
     ) {
       throw new Error('Invalid message settings');
     }
-    if (goodbyeChannelId) {
+    if (welcomeChannelId || goodbyeChannelId) {
       const channels = await fetchGuildChannels(guildId);
-      if (!channels.some((c) => c.id === goodbyeChannelId)) throw new Error('Invalid channel');
+      for (const id of [welcomeChannelId, goodbyeChannelId]) {
+        if (id && !channels.some((c) => c.id === id)) throw new Error('Invalid channel');
+      }
     }
     await prisma.guild.update({
       where: { id: guildId },
       data: {
+        welcomeChannelId,
         cardTheme,
         messageLocale,
         welcomeMessage,

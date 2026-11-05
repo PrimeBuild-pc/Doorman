@@ -10,6 +10,7 @@ import {
   botFetch,
   clearGuildListCache,
   fetchGuildRoles,
+  groupChannels,
   manageableGuilds,
 } from './discordApi';
 
@@ -195,5 +196,45 @@ describe('safe role assignment', () => {
     reply('sensitive detail', 403);
     await expect(botFetch('/example')).rejects.toThrow('Discord request failed (403)');
     expect(fetchMock.mock.calls[0]![1]).toMatchObject({ method: 'PUT', cache: 'no-store' });
+  });
+});
+
+describe('channel grouping', () => {
+  it('orders text channels under their categories like the Discord sidebar', () => {
+    const ch = (id: string, type: number, position: number, parent_id: string | null = null) => ({
+      id,
+      name: `n${id}`,
+      type,
+      position,
+      parent_id,
+      permission_overwrites: [],
+    });
+    expect(
+      groupChannels([
+        ch('c2', 4, 2),
+        ch('c1', 4, 1),
+        ch('t3', 0, 1, 'c1'),
+        ch('t2', 5, 0, 'c1'),
+        ch('v1', 2, 0, 'c1'),
+        ch('t1', 0, 0),
+        ch('empty', 4, 3),
+        ch('orphan', 0, 5, 'gone'),
+      ]),
+    ).toEqual([
+      {
+        category: null,
+        channels: [
+          { id: 't1', name: 'nt1' },
+          { id: 'orphan', name: 'norphan' },
+        ],
+      },
+      {
+        category: 'nc1',
+        channels: [
+          { id: 't2', name: 'nt2' },
+          { id: 't3', name: 'nt3' },
+        ],
+      },
+    ]);
   });
 });

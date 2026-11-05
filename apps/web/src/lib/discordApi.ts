@@ -116,7 +116,40 @@ export interface DiscordChannel {
   id: string;
   name: string;
   type: number;
+  position?: number;
+  parent_id?: string | null;
   permission_overwrites: Array<{ id: string; type: 0 | 1; allow: string }>;
+}
+
+export interface ChannelGroup {
+  /** Category name, or null for channels outside any category. */
+  category: string | null;
+  channels: Array<{ id: string; name: string }>;
+}
+
+/** Text channels grouped and ordered like the Discord sidebar, for channel pickers. */
+export function groupChannels(all: DiscordChannel[]): ChannelGroup[] {
+  const byPosition = (a: DiscordChannel, b: DiscordChannel) =>
+    (a.position ?? 0) - (b.position ?? 0);
+  const text = all.filter((c) => TEXT_CHANNEL_TYPES.has(c.type)).sort(byPosition);
+  const categories = all.filter((c) => c.type === CATEGORY_TYPE).sort(byPosition);
+  const pick = (c: DiscordChannel) => ({ id: c.id, name: c.name });
+  const known = new Set(categories.map((c) => c.id));
+  return [
+    {
+      category: null,
+      channels: text.filter((c) => !c.parent_id || !known.has(c.parent_id)).map(pick),
+    },
+    ...categories.map((cat) => ({
+      category: cat.name,
+      channels: text.filter((c) => c.parent_id === cat.id).map(pick),
+    })),
+  ].filter((group) => group.channels.length > 0);
+}
+
+export async function fetchChannelGroups(guildId: string): Promise<ChannelGroup[]> {
+  assertSnowflake(guildId);
+  return groupChannels(await botFetch<DiscordChannel[]>(`/guilds/${guildId}/channels`));
 }
 
 const channelOverwritesSchema = z.array(
@@ -132,6 +165,7 @@ const channelOverwritesSchema = z.array(
 );
 
 export const TEXT_CHANNEL_TYPES = new Set([0, 5]);
+const CATEGORY_TYPE = 4;
 
 export async function fetchGuildRoles(guildId: string): Promise<DiscordRole[]> {
   assertSnowflake(guildId);

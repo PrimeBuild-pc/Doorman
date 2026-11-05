@@ -31,10 +31,10 @@ export const english = {
   changeError:
     "We couldn't complete this change. Check your inputs and server permissions, then try again. If you approved a member, some roles may have been assigned already; check Discord before retrying.",
   unavailableRole: 'Unavailable role ({id})',
-  settings: 'Autorole & welcome',
+  settings: 'Roles on join & anti-raid',
   defaultRoles: 'Default role(s) assigned on join',
   roleHint:
-    "Only safe roles below Doorman's highest role are available. Default roles must not grant administrator or moderation permissions, including channel overrides. Use Ctrl (Windows) or Command (Mac) to select or deselect multiple roles. Leave all unselected to assign none.",
+    "Only safe roles below Doorman's highest role are available. Default roles must not grant administrator or moderation permissions, including channel overrides. Tick the roles to assign; leave all unticked to assign none.",
   noRolesHint:
     ' No assignable roles found. Create a non-admin member role in Discord and move Doorman above it.',
   unavailableDefaults:
@@ -98,6 +98,11 @@ export const english = {
   goodbyeText: 'Goodbye text',
   randomDefault: 'Random default phrase',
   advanced: 'Advanced',
+  preview: 'Live preview',
+  previewHint:
+    'This is how the next member will see it in Discord. It updates as you type; save to apply.',
+  bannerNote: 'Your uploaded banner replaces the theme background on the real card.',
+  inviteButton: 'Invite Doorman',
 } as const;
 export type MessageKey = keyof typeof english;
 export type Messages = Record<MessageKey, string>;
@@ -136,10 +141,10 @@ export const messages = {
     changeError:
       'Impossibile completare la modifica. Controlla i dati e i permessi del server, poi riprova. Se hai approvato un membro, alcuni ruoli potrebbero essere già stati assegnati; controlla Discord prima di riprovare.',
     unavailableRole: 'Ruolo non disponibile ({id})',
-    settings: 'Ruoli automatici e benvenuto',
+    settings: 'Ruoli all’ingresso e anti-raid',
     defaultRoles: 'Ruoli predefiniti assegnati all’ingresso',
     roleHint:
-      'Sono disponibili solo ruoli sicuri sotto il ruolo più alto di Doorman. I ruoli predefiniti non devono concedere permessi di amministrazione o moderazione, incluse le autorizzazioni dei canali. Usa Ctrl (Windows) o Command (Mac) per selezionare o deselezionare più ruoli. Non selezionare nulla per non assegnare ruoli.',
+      'Sono disponibili solo ruoli sicuri sotto il ruolo più alto di Doorman. I ruoli predefiniti non devono concedere permessi di amministrazione o moderazione, incluse le autorizzazioni dei canali. Spunta i ruoli da assegnare; lasciali tutti vuoti per non assegnarne nessuno.',
     noRolesHint:
       ' Nessun ruolo assegnabile trovato. Crea in Discord un ruolo membro senza permessi amministrativi e sposta Doorman sopra di esso.',
     unavailableDefaults:
@@ -205,6 +210,11 @@ export const messages = {
     goodbyeText: 'Testo di addio',
     randomDefault: 'Frase predefinita casuale',
     advanced: 'Avanzate',
+    preview: 'Anteprima dal vivo',
+    previewHint:
+      'Così lo vedrà il prossimo membro su Discord. Si aggiorna mentre scrivi; salva per applicare.',
+    bannerNote: 'Sulla card reale il banner caricato sostituisce lo sfondo del tema.',
+    inviteButton: 'Invita Doorman',
   },
   es: {
     language: 'Idioma',
@@ -239,10 +249,10 @@ export const messages = {
     changeError:
       'No se pudo completar el cambio. Revisa los datos y los permisos del servidor y vuelve a intentarlo. Si aprobaste a un miembro, puede que algunos roles ya se hayan asignado; comprueba Discord antes de reintentar.',
     unavailableRole: 'Rol no disponible ({id})',
-    settings: 'Roles automáticos y bienvenida',
+    settings: 'Roles al entrar y anti-raid',
     defaultRoles: 'Roles predeterminados asignados al entrar',
     roleHint:
-      'Solo están disponibles los roles seguros por debajo del rol más alto de Doorman. Los roles predeterminados no deben conceder permisos de administración o moderación, incluidas las excepciones de los canales. Usa Ctrl (Windows) o Command (Mac) para seleccionar o deseleccionar varios roles. No selecciones ninguno para no asignar roles.',
+      'Solo están disponibles los roles seguros por debajo del rol más alto de Doorman. Los roles predeterminados no deben conceder permisos de administración o moderación, incluidas las excepciones de los canales. Marca los roles que quieres asignar; déjalos todos sin marcar para no asignar ninguno.',
     noRolesHint:
       ' No se encontraron roles asignables. Crea en Discord un rol de miembro sin permisos administrativos y sitúa a Doorman por encima.',
     unavailableDefaults:
@@ -310,6 +320,11 @@ export const messages = {
     goodbyeText: 'Texto de despedida',
     randomDefault: 'Frase predeterminada aleatoria',
     advanced: 'Avanzado',
+    preview: 'Vista previa en vivo',
+    previewHint:
+      'Así lo verá el próximo miembro en Discord. Se actualiza mientras escribes; guarda para aplicar.',
+    bannerNote: 'En la tarjeta real, tu banner sustituye el fondo del tema.',
+    inviteButton: 'Invitar a Doorman',
   },
   ru: {
     language: 'Язык',
@@ -342,10 +357,10 @@ export const messages = {
     changeError:
       'Не удалось завершить изменение. Проверьте введённые данные и права на сервере, затем повторите попытку. Если вы одобрили участника, часть ролей могла быть уже назначена; проверьте Discord перед повтором.',
     unavailableRole: 'Недоступная роль ({id})',
-    settings: 'Автоматические роли и приветствие',
+    settings: 'Роли при входе и анти-рейд',
     defaultRoles: 'Роли по умолчанию при входе',
     roleHint:
-      'Доступны только безопасные роли ниже высшей роли Doorman. Роли по умолчанию не должны предоставлять права администратора или модератора, включая переопределения каналов. Используйте Ctrl (Windows) или Command (Mac), чтобы выбрать или снять выбор нескольких ролей. Чтобы не назначать роли, оставьте все невыбранными.',
+      'Доступны только безопасные роли ниже высшей роли Doorman. Роли по умолчанию не должны предоставлять права администратора или модератора, включая переопределения каналов. Отметьте роли для назначения; оставьте все пустыми, чтобы не назначать ни одной.',
     noRolesHint:
       ' Нет доступных для назначения ролей. Создайте в Discord роль участника без прав администратора и переместите Doorman выше неё.',
     unavailableDefaults:
@@ -410,6 +425,11 @@ export const messages = {
     goodbyeText: 'Текст прощания',
     randomDefault: 'Случайная стандартная фраза',
     advanced: 'Дополнительно',
+    preview: 'Предпросмотр',
+    previewHint:
+      'Так это увидит следующий участник в Discord. Обновляется при вводе; сохраните, чтобы применить.',
+    bannerNote: 'На настоящей карточке загруженный баннер заменяет фон темы.',
+    inviteButton: 'Пригласить Doorman',
   },
   zh: {
     language: '语言',
@@ -441,10 +461,10 @@ export const messages = {
     changeError:
       '无法完成更改。请检查输入和服务器权限后重试。如果你批准了成员，部分身份组可能已经分配；请先检查 Discord 再重试。',
     unavailableRole: '身份组不可用（{id}）',
-    settings: '自动身份组与欢迎设置',
+    settings: '加入时的身份组与防突袭',
     defaultRoles: '加入时分配的默认身份组',
     roleHint:
-      '仅显示低于 Doorman 最高身份组的安全身份组。默认身份组不得授予管理员或管理权限，包括频道权限覆盖。使用 Ctrl（Windows）或 Command（Mac）选择或取消选择多个身份组。全部不选则不分配任何身份组。',
+      '仅显示低于 Doorman 最高身份组的安全身份组。默认身份组不得授予管理员或管理权限，包括频道权限覆盖。勾选要分配的身份组；全部不勾选则不分配。',
     noRolesHint:
       ' 未找到可分配的身份组。请在 Discord 中创建无管理员权限的成员身份组，并将 Doorman 移到其上方。',
     unavailableDefaults: ' 部分已保存的身份组无法再分配，保存时将被移除。',
@@ -503,6 +523,10 @@ export const messages = {
     goodbyeText: '告别文字',
     randomDefault: '随机默认语句',
     advanced: '高级',
+    preview: '实时预览',
+    previewHint: '下一位成员在 Discord 中将看到这样的效果。输入时实时更新；保存后生效。',
+    bannerNote: '在实际卡片上，上传的横幅会替换主题背景。',
+    inviteButton: '邀请 Doorman',
   },
 } satisfies Record<Locale, Messages>;
 
