@@ -10,7 +10,7 @@ In the [Discord Developer Portal](https://discord.com/developers/applications):
 2. Under **Bot**, enable **Server Members Intent**. Presence Intent and Message Content Intent are not needed; the code requires the non-privileged Guilds/GuildInvites intents. Verified apps must obtain Discord approval for privileged intents.
 3. Generate/copy the Bot Token and, under **OAuth2**, the Client Secret. Store them in a password manager; do not paste them into chat, issues, screenshots or shell history.
 4. Under **OAuth2 → Redirects**, add exactly `http://localhost:3000/api/auth/callback` for the local default; for HTTPS, use `https://doorman.example.org/api/auth/callback`. Scheme, host and port must match `PUBLIC_URL`, with no trailing slash in the origin. Login requires `identify guilds`, not permission to invite the bot.
-5. Under **Installation**, choose Guild Install (if the portal requests it); under **OAuth2 → URL Generator**, select `bot` and `applications.commands`. Invite the app only to the desired server.
+5. Under **Installation**, choose Guild Install (if the portal requests it). Invite the bot later from the dashboard: each server without Doorman shows an **Invite Doorman** button with `bot`, `applications.commands` and the minimum permissions below (Manage Roles, View Channel, Send Messages, Embed Links, Attach Files).
 
 ### Minimum permissions
 
