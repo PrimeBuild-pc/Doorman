@@ -47,7 +47,14 @@ bash install.sh
 
 First prepare the Discord app using the [self-hosting guide](docs/self-hosting.md): intents, OAuth, minimum permissions and role hierarchy. The installer hides the token and Client Secret, generates random passwords, **does not overwrite `.env`** and asks for confirmation before downloading/starting services. The dashboard stays on `127.0.0.1:3000`; remote access requires HTTPS or an SSH tunnel.
 
-After startup, open `http://localhost:3000`, log in with Discord, choose the server and save the roles/channel. For a remote homelab, use the guide's SSH tunnel before opening the browser.
+After startup, open `http://localhost:3000` and log in with Discord (for a remote homelab, open the guide's SSH tunnel first). Then, for each server:
+
+1. Click **Invite Doorman** next to the server: the link already asks for exactly the permissions Doorman needs.
+2. Open the server and, in **Welcome & goodbye messages**, pick the welcome channel, a card theme and the message language. The live preview shows the embed, the card and the goodbye exactly as members will see them; optionally write your own texts.
+3. Under **Roles on join & anti-raid**, tick the roles to give new members (Doorman must sit above them in Discord's role list).
+4. In Discord, turn off the built-in join message (**Server Settings → Engagement → System Messages → Send a random welcome message**) and any other bot's welcome, so members are greeted once.
+
+The bot logs at startup whether it is missing a permission in any welcome channel.
 
 ## Interface languages
 
