@@ -8,6 +8,7 @@ import {
   addRoleViaBot,
   assertCanManageGuild,
   botFetch,
+  clearGuildListCache,
   fetchGuildRoles,
   manageableGuilds,
 } from './discordApi';
@@ -29,14 +30,17 @@ function reply(body: unknown, status = 200) {
 }
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.useRealTimers();
+  clearGuildListCache();
   vi.stubGlobal('fetch', fetchMock);
 });
 
 describe('current Discord authorization', () => {
-  it('checks permissions again for every call and rejects a revoked manager before bot lookups', async () => {
+  it('rechecks permissions once the cached list expires and rejects a revoked manager before bot lookups', async () => {
     reply([guild]);
     reply({ id: guild.id });
     await expect(assertCanManageGuild({ accessToken: 'oauth' }, '100')).resolves.toEqual(guild);
+    clearGuildListCache(); // same effect as the 30s expiry
     reply([{ ...guild, permissions: '0' }]);
     await expect(assertCanManageGuild({ accessToken: 'oauth' }, '100')).rejects.toThrow(
       'Not authorized',
@@ -62,7 +66,20 @@ describe('current Discord authorization', () => {
     reply('removed', 403);
     await expect(assertCanManageGuild({ accessToken: 'oauth' }, '100')).rejects.toThrow('(403)');
     reply('secret response', 401);
-    await expect(manageableGuilds({ accessToken: 'oauth' })).rejects.toThrow('sign in again');
+    await expect(manageableGuilds({ accessToken: 'expired' })).rejects.toThrow('sign in again');
+  });
+  it('reuses the guild list for 30s per token, then asks Discord again', async () => {
+    vi.useFakeTimers();
+    reply([guild]);
+    await manageableGuilds({ accessToken: 'oauth' });
+    await manageableGuilds({ accessToken: 'oauth' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    reply([]);
+    await expect(manageableGuilds({ accessToken: 'other' })).resolves.toEqual([]);
+    vi.advanceTimersByTime(30_000);
+    reply([{ ...guild, permissions: '0' }]);
+    await expect(manageableGuilds({ accessToken: 'oauth' })).resolves.toEqual([]);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
   it('fails closed on malformed permission data', async () => {
     reply([{ ...guild, permissions: 'invalid' }]);

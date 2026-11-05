@@ -33,7 +33,10 @@ vi.mock('@/lib/discordApi', () => ({
   botFetch: mocks.botFetch,
   assertSnowflake: vi.fn(),
 }));
-vi.mock('@doorman/shared', () => ({ getEnv: () => ({ UPLOADS_DIR: mocks.uploads }) }));
+vi.mock('@doorman/shared', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@doorman/shared')>()),
+  getEnv: () => ({ UPLOADS_DIR: mocks.uploads }),
+}));
 vi.mock('next/cache', () => ({ revalidatePath: mocks.revalidate }));
 vi.mock('next/navigation', () => ({
   redirect: (url: string) => {
@@ -51,6 +54,7 @@ import {
   addInviteMap,
   decidePending,
   removeInviteMap,
+  updateMessages,
   updateSettings,
   uploadBanner,
 } from './actions';
@@ -98,6 +102,45 @@ afterEach(async () => {
 });
 
 describe('guild scoped mutations', () => {
+  it('saves message settings, maps checkboxes and blank templates, and validates every field', async () => {
+    await expect(
+      updateMessages(
+        '100',
+        form({
+          cardTheme: 'ember',
+          messageLocale: 'it',
+          welcomeMessage: '  Ciao {user}!  ',
+          goodbyeMessage: '   ',
+          goodbyeChannelId: '400',
+          goodbyeEnabled: 'on',
+        }),
+      ),
+    ).rejects.toThrow(success('saved'));
+    expect(mocks.updateGuild).toHaveBeenCalledWith({
+      where: { id: '100' },
+      data: {
+        cardTheme: 'ember',
+        messageLocale: 'it',
+        welcomeMessage: 'Ciao {user}!',
+        goodbyeMessage: null,
+        goodbyeChannelId: '400',
+        showMemberCount: false,
+        goodbyeEnabled: true,
+      },
+    });
+    mocks.updateGuild.mockClear();
+    const valid = { cardTheme: 'midnight', messageLocale: 'en' };
+    for (const values of [
+      { ...valid, cardTheme: 'toString' },
+      { ...valid, messageLocale: 'fr' },
+      { ...valid, welcomeMessage: 'x'.repeat(1501) },
+      { ...valid, goodbyeChannelId: 'foreign' },
+    ]) {
+      await expect(updateMessages('100', form(values))).rejects.toThrow(failure);
+    }
+    expect(mocks.updateGuild).not.toHaveBeenCalled();
+  });
+
   it('rejects stale permissions and unauthenticated writes before any database mutation', async () => {
     mocks.authorize.mockRejectedValue(new Error('Revoked'));
     await expect(removeInviteMap('100', 'foreign')).rejects.toThrow(failure);

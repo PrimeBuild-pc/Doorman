@@ -16,6 +16,16 @@ model Guild {
   /// 0 disables the anti-raid gate. Above 0, an account younger than this many
   /// hours is queued in PendingApproval instead of being auto-roled.
   minAccountAgeHours Int       @default(0)
+  /// Public welcome/goodbye look and language (see @doorman/shared welcome.ts).
+  cardTheme          String    @default("midnight")
+  messageLocale      String    @default("en")
+  /// Custom templates; null means a random default phrase in messageLocale.
+  welcomeMessage     String?
+  showMemberCount    Boolean   @default(true)
+  goodbyeEnabled     Boolean   @default(true)
+  /// null falls back to welcomeChannelId.
+  goodbyeChannelId   String?
+  goodbyeMessage     String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
