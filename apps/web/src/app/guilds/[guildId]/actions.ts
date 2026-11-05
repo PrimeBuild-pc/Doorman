@@ -7,7 +7,7 @@ import sharp from 'sharp';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma } from '@doorman/database';
-import { getEnv } from '@doorman/shared';
+import { getEnv, isCardTheme, isLocale, MAX_TEMPLATE_LENGTH } from '@doorman/shared';
 import { getSession } from '@/lib/session';
 import {
   addRoleViaBot,
@@ -65,6 +65,41 @@ export async function updateSettings(guildId: string, formData: FormData): Promi
     await prisma.guild.update({
       where: { id: guildId },
       data: { defaultRoleIds, welcomeChannelId, minAccountAgeHours },
+    });
+  });
+}
+
+export async function updateMessages(guildId: string, formData: FormData): Promise<void> {
+  await mutateGuild(guildId, 'saved', async () => {
+    const text = (key: string) => String(formData.get(key) ?? '').trim();
+    const cardTheme = text('cardTheme');
+    const messageLocale = text('messageLocale');
+    const welcomeMessage = text('welcomeMessage') || null;
+    const goodbyeMessage = text('goodbyeMessage') || null;
+    const goodbyeChannelId = text('goodbyeChannelId') || null;
+    if (
+      !isCardTheme(cardTheme) ||
+      !isLocale(messageLocale) ||
+      (welcomeMessage?.length ?? 0) > MAX_TEMPLATE_LENGTH ||
+      (goodbyeMessage?.length ?? 0) > MAX_TEMPLATE_LENGTH
+    ) {
+      throw new Error('Invalid message settings');
+    }
+    if (goodbyeChannelId) {
+      const channels = await fetchGuildChannels(guildId);
+      if (!channels.some((c) => c.id === goodbyeChannelId)) throw new Error('Invalid channel');
+    }
+    await prisma.guild.update({
+      where: { id: guildId },
+      data: {
+        cardTheme,
+        messageLocale,
+        welcomeMessage,
+        goodbyeMessage,
+        goodbyeChannelId,
+        showMemberCount: formData.get('showMemberCount') === 'on',
+        goodbyeEnabled: formData.get('goodbyeEnabled') === 'on',
+      },
     });
   });
 }

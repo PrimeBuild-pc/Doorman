@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadImage } from '@napi-rs/canvas';
-import { ordinal, renderWelcomeCard } from './welcomeCard.js';
+import { renderWelcomeCard } from './welcomeCard.js';
+
+const avatarUrl = 'https://cdn.discordapp.com/avatar.png';
 
 const { ctx, encode } = vi.hoisted(() => ({
   ctx: {
@@ -49,39 +51,42 @@ afterEach(() => {
 
 // No real HTTP calls or native canvas rendering are needed for these contracts.
 describe('welcome card', () => {
-  it('draws the built-in PrimeBuild background and guild name when no banner is uploaded', async () => {
-    await renderWelcomeCard(
-      null,
-      'https://cdn.discordapp.com/avatar.png',
-      'Member',
-      'PrimeBuild',
-      169,
-    );
+  it('draws the theme background, localized kicker and member number without a banner', async () => {
+    await renderWelcomeCard({
+      bannerFilePath: null,
+      avatarUrl,
+      displayName: 'Member',
+      guildName: 'PrimeBuild',
+      memberCount: 169,
+      theme: 'ember',
+      locale: 'it',
+    });
     // Only the avatar is decoded; no banner file is read.
     expect(loadImage).toHaveBeenCalledTimes(1);
     expect(ctx.createRadialGradient).toHaveBeenCalled();
-    expect(ctx.fillText).toHaveBeenCalledWith('PrimeBuild  ·  169th member', 312, 250, 656);
+    expect(ctx.fillText).toHaveBeenCalledWith('BENVENUTO NEL SERVER', 312, 132, 656);
+    expect(ctx.fillText).toHaveBeenCalledWith('PrimeBuild  ·  169° membro', 312, 250, 656);
   });
 
-  it.each([
-    [1, '1st'],
-    [2, '2nd'],
-    [3, '3rd'],
-    [11, '11th'],
-    [12, '12th'],
-    [13, '13th'],
-    [21, '21st'],
-    [112, '112th'],
-    [169, '169th'],
-  ])('formats %i as %s', (n, expected) => {
-    expect(ordinal(n)).toBe(expected);
+  it('falls back to the neutral theme and English for unknown values, and hides a null count', async () => {
+    await renderWelcomeCard({
+      bannerFilePath: null,
+      avatarUrl,
+      displayName: 'Member',
+      guildName: 'Server',
+      memberCount: null,
+      theme: 'neon-pink',
+      locale: 'xx',
+    });
+    expect(ctx.fillText).toHaveBeenCalledWith('WELCOME TO THE SERVER', 312, 132, 656);
+    expect(ctx.fillText).toHaveBeenCalledWith('Server', 312, 250, 656);
   });
 
   it('fetches the avatar with a timeout and bounds a long username to the remaining width', async () => {
     const timeout = vi.spyOn(AbortSignal, 'timeout');
     const username = 'Long username '.repeat(20);
     await expect(
-      renderWelcomeCard('banner.png', 'https://cdn.discordapp.com/avatar.png', username),
+      renderWelcomeCard({ bannerFilePath: 'banner.png', avatarUrl, displayName: username }),
     ).resolves.toEqual(Buffer.from('png'));
     expect(timeout).toHaveBeenCalledWith(10_000);
     expect(fetch).toHaveBeenCalledWith('https://cdn.discordapp.com/avatar.png', {
@@ -100,7 +105,11 @@ describe('welcome card', () => {
       arrayBuffer,
     } as unknown as Response);
     await expect(
-      renderWelcomeCard('banner.png', 'https://cdn.discordapp.com/missing.png', 'Member'),
+      renderWelcomeCard({
+        bannerFilePath: 'banner.png',
+        avatarUrl: 'https://cdn.discordapp.com/missing.png',
+        displayName: 'Member',
+      }),
     ).rejects.toThrow('404');
     expect(arrayBuffer).not.toHaveBeenCalled();
     expect(loadImage).toHaveBeenCalledTimes(1);
@@ -119,11 +128,11 @@ describe('welcome card', () => {
         }),
     );
     vi.mocked(fetch).mockResolvedValue({ ok: true, arrayBuffer } as unknown as Response);
-    const rendering = renderWelcomeCard(
-      'banner.png',
-      'https://cdn.discordapp.com/avatar.png',
-      'Member',
-    );
+    const rendering = renderWelcomeCard({
+      bannerFilePath: 'banner.png',
+      avatarUrl,
+      displayName: 'Member',
+    });
     const rejected = expect(rendering).rejects.toThrow('Avatar timed out');
     await vi.waitFor(() => expect(arrayBuffer).toHaveBeenCalled());
     controller.abort(new Error('Avatar timed out'));

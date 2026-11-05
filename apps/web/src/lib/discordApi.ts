@@ -5,6 +5,7 @@ import {
   isSafeAutoRole,
   PERMISSIONS,
 } from '@doorman/shared';
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import type { DiscordSession, DiscordUserGuild } from './session';
 
@@ -44,9 +45,33 @@ const guildSchema = z.object({
   permissions: z.string().regex(/^\d+$/),
 });
 
+/**
+ * Discord rate-limits /users/@me/guilds hard (a page load plus a form save is enough
+ * to get 429). Reuse the list briefly per token: a revoked Manage Server permission
+ * is noticed within GUILD_LIST_TTL_MS; bot presence is still checked live.
+ */
+const GUILD_LIST_TTL_MS = 30_000;
+const guildListCache = new Map<string, { at: number; guilds: DiscordUserGuild[] }>();
+
+export function clearGuildListCache(): void {
+  guildListCache.clear();
+}
+
 export async function manageableGuilds(
   session: Pick<DiscordSession, 'accessToken'>,
 ): Promise<DiscordUserGuild[]> {
+  const key = createHash('sha256').update(session.accessToken).digest('hex');
+  const now = Date.now();
+  const cached = guildListCache.get(key);
+  if (cached && now - cached.at < GUILD_LIST_TTL_MS) return cached.guilds;
+  for (const [k, v] of guildListCache)
+    if (now - v.at >= GUILD_LIST_TTL_MS) guildListCache.delete(k);
+  const guilds = await fetchManageableGuilds(session.accessToken);
+  guildListCache.set(key, { at: now, guilds });
+  return guilds;
+}
+
+async function fetchManageableGuilds(accessToken: string): Promise<DiscordUserGuild[]> {
   const guilds: DiscordUserGuild[] = [];
   let after = '';
   while (true) {
@@ -54,7 +79,7 @@ export async function manageableGuilds(
       .array(guildSchema)
       .parse(
         await userFetch(
-          session.accessToken,
+          accessToken,
           `/users/@me/guilds?limit=200${after ? `&after=${after}` : ''}`,
         ),
       );

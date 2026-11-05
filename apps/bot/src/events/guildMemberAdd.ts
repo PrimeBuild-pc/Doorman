@@ -1,10 +1,17 @@
 import path from 'node:path';
 import { EmbedBuilder, Events, PermissionFlagsBits, type GuildMember } from 'discord.js';
 import { prisma } from '@doorman/database';
-import { accountAgeHours, getEnv, isSafeAutoRole } from '@doorman/shared';
+import {
+  accountAgeHours,
+  cardThemes,
+  DEFAULT_CARD_THEME,
+  getEnv,
+  isCardTheme,
+  isSafeAutoRole,
+  pickMessage,
+} from '@doorman/shared';
 import { resolveUsedInviteCode } from '../lib/inviteCache.js';
 import { renderWelcomeCard } from '../lib/welcomeCard.js';
-import { pickWelcomePhrase } from '../lib/welcomePhrases.js';
 
 export const name = Events.GuildMemberAdd;
 
@@ -107,22 +114,34 @@ export async function execute(member: GuildMember): Promise<void> {
         ) {
           throw new Error('Banner path must be a filename within UPLOADS_DIR');
         }
-        // No uploaded banner: the card falls back to the built-in PrimeBuild background.
+        // No uploaded banner: the card uses the theme's built-in background.
         const bannerFile = bannerPath ? path.join(getEnv().UPLOADS_DIR, bannerPath) : null;
-        const card = await renderWelcomeCard(
-          bannerFile,
-          member.user.displayAvatarURL({ extension: 'png', size: 256 }),
-          member.displayName,
-          member.guild.name,
-          member.guild.memberCount,
-        );
+        const theme = isCardTheme(guildConfig.cardTheme)
+          ? guildConfig.cardTheme
+          : DEFAULT_CARD_THEME;
+        const memberCount = member.guild.memberCount;
+        const card = await renderWelcomeCard({
+          bannerFilePath: bannerFile,
+          avatarUrl: member.user.displayAvatarURL({ extension: 'png', size: 256 }),
+          displayName: member.displayName,
+          guildName: member.guild.name,
+          memberCount: guildConfig.showMemberCount ? memberCount : null,
+          theme,
+          locale: guildConfig.messageLocale,
+        });
         const mention = `<@${member.id}>`;
+        const text = pickMessage('welcome', guildConfig.welcomeMessage, guildConfig.messageLocale, {
+          user: mention,
+          username: member.displayName,
+          server: member.guild.name,
+          memberCount,
+        });
         await channel.send({
           content: mention,
           embeds: [
             new EmbedBuilder()
-              .setColor(0xff6600)
-              .setDescription(pickWelcomePhrase(mention, member.guild.name))
+              .setColor(Number.parseInt(cardThemes[theme].accent.slice(1), 16))
+              .setDescription(text)
               .setImage('attachment://welcome.png'),
           ],
           files: [{ attachment: card, name: 'welcome.png' }],

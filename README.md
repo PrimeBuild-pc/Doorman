@@ -31,7 +31,7 @@
 
 # Doorman
 
-A self-hosted Discord bot for communities: autorole, welcome cards with banners, invite-based roles and an approval queue for accounts that are too new. A dashboard with Discord login; `/doorman-status` and `/doorman-pending` commands for users who can manage the server.
+A self-hosted Discord bot for communities: autorole, welcome cards (6 colour themes or your own banner, with the member's join number), welcome and goodbye messages (random defaults in 5 languages or your own text with `{user}`, `{username}`, `{server}`, `{memberCount}`), invite-based roles and an approval queue for accounts that are too new. A dashboard with Discord login; `/doorman-status` and `/doorman-pending` commands for users who can manage the server.
 
 **In development:** the account-age filter is not complete anti-raid protection; invite attribution is best-effort. Do not automatically assign administrative roles.
 
@@ -54,7 +54,7 @@ After startup, open `http://localhost:3000`, log in with Discord, choose the ser
 The dashboard and Discord interface support English (`en`), Italian (`it`), Spanish (`es`), Russian (`ru`) and Chinese (`zh`, Simplified Chinese text for all Chinese locales). The installer and operational documentation are English-only.
 
 - Dashboard: choose **Language** and apply it. The choice is stored in the `doorman_locale` browser cookie for one year, including across logout. Without a valid choice, the browser's `Accept-Language` preferences select the highest-priority supported language; otherwise English is used. Regional variants share their base language. The page language, dates, labels, help and safe errors follow this choice.
-- Discord: slash command descriptions follow the Discord client language; replies use the interaction's user locale (the guild locale only if the interaction locale is absent). Public welcomes are always English: an embed with a random greeting and a card showing the member's avatar, name, server and join number (e.g. "169th member"). Unsupported or invalid Discord locales fall back to English. Command names stay unchanged; registration updates descriptions on the next normal bot startup.
+- Discord: slash command descriptions follow the Discord client language; replies use the interaction's user locale (the guild locale only if the interaction locale is absent). Public welcomes, goodbyes and cards use the language chosen per server in the dashboard (default English). Unsupported or invalid Discord locales fall back to English. Command names stay unchanged; registration updates descriptions on the next normal bot startup.
 
 Server/channel/role names, usernames, invite codes, uploaded images and other user content are never translated. Logs, developer errors and code comments remain English. Member and server names on welcome cards may use any script; the Docker image includes Latin/Cyrillic and CJK fonts.
 

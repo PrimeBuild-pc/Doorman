@@ -34,6 +34,7 @@ vi.mock('@doorman/database', () => ({
 }));
 vi.mock('./guilds/[guildId]/actions', () => ({
   updateSettings: vi.fn(),
+  updateMessages: vi.fn(),
   uploadBanner: vi.fn(),
   addInviteMap: vi.fn(),
   removeInviteMap: vi.fn(),

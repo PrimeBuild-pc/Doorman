@@ -3,15 +3,30 @@ import { prisma } from '@doorman/database';
 import { getSession } from '@/lib/session';
 import { assertCanManageGuild, fetchGuildChannels, fetchGuildRoles } from '@/lib/discordApi';
 import { FormButton } from '../../form-button';
-import { translate, type MessageKey } from '@doorman/shared';
+import {
+  cardThemes,
+  locales,
+  MAX_TEMPLATE_LENGTH,
+  translate,
+  type MessageKey,
+} from '@doorman/shared';
 import { getLocale } from '@/lib/locale';
 import {
   addInviteMap,
   decidePending,
   removeInviteMap,
+  updateMessages,
   updateSettings,
   uploadBanner,
 } from './actions';
+
+const localeNames: Record<(typeof locales)[number], string> = {
+  en: 'English',
+  it: 'Italiano',
+  es: 'Español',
+  ru: 'Русский',
+  zh: '中文',
+};
 
 const notices: Record<string, MessageKey> = {
   saved: 'saved',
@@ -159,6 +174,130 @@ export default async function GuildSettingsPage({
               {t('ageHint')}
             </p>
           </div>
+          <FormButton className={buttonClass} pendingLabel={t('saving')}>
+            {t('save')}
+          </FormButton>
+        </form>
+      </section>
+
+      <section aria-labelledby="messages-heading">
+        <h2 id="messages-heading" className="mb-3 text-lg font-semibold">
+          {t('messagesHeading')}
+        </h2>
+        <form action={updateMessages.bind(null, guildId)} className="space-y-4">
+          <fieldset>
+            <legend className="mb-2 text-sm text-gray-300">{t('cardTheme')}</legend>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(cardThemes).map(([id, theme]) => (
+                <label
+                  key={id}
+                  className="flex min-h-11 cursor-pointer items-center gap-2 rounded border border-gray-700 px-3 py-2 text-sm has-[:checked]:border-white"
+                >
+                  <input
+                    type="radio"
+                    name="cardTheme"
+                    value={id}
+                    defaultChecked={guildConfig.cardTheme === id}
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-4 w-4 rounded-full"
+                    style={{ background: theme.accent, boxShadow: `0 0 0 3px ${theme.background}` }}
+                  />
+                  <span className="capitalize">{id}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <div>
+            <label htmlFor="message-locale" className="mb-1 block text-sm text-gray-300">
+              {t('messageLanguage')}
+            </label>
+            <select
+              id="message-locale"
+              name="messageLocale"
+              defaultValue={guildConfig.messageLocale}
+              className={inputClass}
+            >
+              {locales.map((l) => (
+                <option key={l} value={l}>
+                  {localeNames[l]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="welcome-message" className="mb-1 block text-sm text-gray-300">
+              {t('welcomeText')}
+            </label>
+            <textarea
+              id="welcome-message"
+              name="welcomeMessage"
+              rows={2}
+              maxLength={MAX_TEMPLATE_LENGTH}
+              defaultValue={guildConfig.welcomeMessage ?? ''}
+              placeholder={t('randomDefault')}
+              aria-describedby="template-hint"
+              className={inputClass}
+            />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-gray-300">
+            <input
+              type="checkbox"
+              name="goodbyeEnabled"
+              defaultChecked={guildConfig.goodbyeEnabled}
+            />
+            {t('goodbyeEnabled')}
+          </label>
+          <div>
+            <label htmlFor="goodbye-message" className="mb-1 block text-sm text-gray-300">
+              {t('goodbyeText')}
+            </label>
+            <textarea
+              id="goodbye-message"
+              name="goodbyeMessage"
+              rows={2}
+              maxLength={MAX_TEMPLATE_LENGTH}
+              defaultValue={guildConfig.goodbyeMessage ?? ''}
+              placeholder={t('randomDefault')}
+              aria-describedby="template-hint"
+              className={inputClass}
+            />
+            <p id="template-hint" className="mt-2 text-sm text-gray-400">
+              {t('templateHint')}
+            </p>
+          </div>
+          <details className="rounded border border-gray-800 p-3">
+            <summary className="cursor-pointer text-sm text-gray-300">{t('advanced')}</summary>
+            <div className="mt-3 space-y-4">
+              <div>
+                <label htmlFor="goodbye-channel" className="mb-1 block text-sm text-gray-300">
+                  {t('goodbyeChannel')}
+                </label>
+                <select
+                  id="goodbye-channel"
+                  name="goodbyeChannelId"
+                  defaultValue={guildConfig.goodbyeChannelId ?? ''}
+                  className={inputClass}
+                >
+                  <option value="">{t('sameAsWelcome')}</option>
+                  {channels.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      #{c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <label className="flex items-center gap-2 text-sm text-gray-300">
+                <input
+                  type="checkbox"
+                  name="showMemberCount"
+                  defaultChecked={guildConfig.showMemberCount}
+                />
+                {t('showMemberCount')}
+              </label>
+            </div>
+          </details>
           <FormButton className={buttonClass} pendingLabel={t('saving')}>
             {t('save')}
           </FormButton>

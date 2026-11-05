@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, REST, Routes } from 'discord.js';
+import { Client, GatewayIntentBits, Partials, REST, Routes } from 'discord.js';
 import { getEnv } from '@doorman/shared';
 import { registerEvents } from './events/index.js';
 import { commands } from './commands/index.js';
@@ -11,6 +11,8 @@ const client = new Client({
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildInvites,
   ],
+  // Lets GuildMemberRemove fire for members who joined before the bot started.
+  partials: [Partials.GuildMember],
 });
 
 async function registerCommands(): Promise<void> {

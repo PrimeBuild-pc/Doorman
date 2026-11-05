@@ -2,6 +2,7 @@ import { Events, PermissionFlagsBits, type Client, type Guild } from 'discord.js
 import { prisma } from '@doorman/database';
 import { cacheCreatedInvite, clearInviteCache, warmInviteCache } from '../lib/inviteCache.js';
 import * as guildMemberAdd from './guildMemberAdd.js';
+import * as guildMemberRemove from './guildMemberRemove.js';
 import { commands } from '../commands/index.js';
 import { interactionLocale, t } from '../lib/i18n.js';
 
@@ -60,6 +61,11 @@ export function registerEvents(client: Client, registerCommands: () => Promise<v
   client.on(Events.GuildDelete, (guild) => clearInviteCache(guild.id));
   client.on(Events.GuildUnavailable, (guild) => clearInviteCache(guild.id));
   client.on(Events.Error, (err) => console.error('Discord client error', err));
+  client.on(guildMemberRemove.name, (member) =>
+    guildMemberRemove.execute(member).catch((err: unknown) => {
+      console.warn(`Goodbye failed in guild ${member.guild.id} for member ${member.id}`, err);
+    }),
+  );
   client.on(guildMemberAdd.name, (member) =>
     guildMemberAdd.execute(member).catch((err: unknown) => {
       console.error(`Member join failed in guild ${member.guild.id} for member ${member.id}`, err);
