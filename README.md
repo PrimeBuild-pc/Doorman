@@ -82,4 +82,10 @@ The bot needs no AI model, LLM key or AI subscription. Any coding-agent subscrip
 - [Infrastructure checks without deployment](docs/infra-checks.md)
 - [Safe agent assistance](docs/agent-operations.md)
 
+## Support the project
+
+Doorman is free and open source. If it helps you, you can support its development:
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Y6U02AIRB8) [![PayPal](https://img.shields.io/badge/Support-PayPal-0070BA?logo=paypal&logoColor=white)](https://paypal.me/PrimeBuildOfficial)
+
 [MIT](LICENSE) license.
